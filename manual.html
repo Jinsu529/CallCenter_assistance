@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>상담 메뉴얼 모음 - CallCenter AI Demo</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="layout">
+    <nav class="main-nav">
+      <a href="index.html" class="nav-link">실시간 상담</a>
+      <a href="debriefing.html" class="nav-link">콜 종료 후처리</a>
+      <a href="manual.html" class="nav-link active">메뉴얼 모음</a>
+      <a href="admin.html" class="nav-link">관리자 대시보드</a>
+    </nav>
+    <header class="page-header">
+      <div class="title-group">
+        <h1>📚 상담 메뉴얼 모음</h1>
+        <p class="subtitle">카셰어링 플랫폼 상담센터 매뉴얼 라이브러리</p>
+      </div>
+      <div class="header-metrics">
+        <div class="header-metric">
+          <span class="metric-label">총 매뉴얼</span>
+          <span class="metric-value">24개</span>
+        </div>
+        <div class="header-metric">
+          <span class="metric-label">카테고리</span>
+          <span class="metric-value">4개</span>
+        </div>
+        <div class="header-metric">
+          <span class="metric-label">최근 업데이트</span>
+          <span class="metric-value">2024.01.15</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="dashboard">
+      <section class="column left-column">
+        <article class="card category-card priority">
+          <div class="card-header">
+            <h2>1. 긴급/사고 ⭐️</h2>
+            <span class="badge badge-danger">최고 우선순위</span>
+          </div>
+          <p class="card-description">고객의 안전과 직결되며 가장 높은 스트레스를 유발하는 상황입니다. AI가 키워드(예: "사고", "경찰", "고장")를 감지했을 때 0.1초 만에 띄워야 하는 매뉴얼입니다.</p>
+          <div class="manual-list">
+            <a href="manual-detail.html?category=emergency&id=1" class="manual-item">
+              <div class="manual-item-header">
+                <strong>1.1. 교통사고 발생 시 대응 매뉴얼</strong>
+                <span class="badge badge-danger">긴급</span>
+              </div>
+              <p class="manual-item-desc">대인/대물 사고 시 즉각 대응 절차</p>
+            </a>
+            <a href="manual-detail.html?category=emergency&id=2" class="manual-item">
+              <div class="manual-item-header">
+                <strong>1.2. 차량 고장 및 견인 매뉴얼</strong>
+                <span class="badge badge-danger">긴급</span>
+              </div>
+              <p class="manual-item-desc">시동 불량, 경고등 점등, 타이어 펑크 등 증상별 대응</p>
+            </a>
+            <a href="manual-detail.html?category=emergency&id=3" class="manual-item">
+              <div class="manual-item-header">
+                <strong>1.3. 법규 위반 인지 시 매뉴얼</strong>
+                <span class="badge badge-warning">주의</span>
+              </div>
+              <p class="manual-item-desc">음주 운전, 무면허 운전 의심 시 대응</p>
+            </a>
+          </div>
+        </article>
+
+        <article class="card category-card">
+          <div class="card-header">
+            <h2>2. 차량 이용 중</h2>
+            <span class="badge badge-info">실시간 문제</span>
+          </div>
+          <p class="card-description">고객이 '지금 당장' 차를 이용하지 못하는 상황입니다. 가장 빈번하게 발생하는 문의입니다.</p>
+          <div class="manual-list">
+            <a href="manual-detail.html?category=usage&id=1" class="manual-item">
+              <div class="manual-item-header">
+                <strong>2.1. 스마트키 (도어) 오류 매뉴얼</strong>
+                <span class="badge badge-warning">자주 발생</span>
+              </div>
+              <p class="manual-item-desc">문이 안 열리거나 안 잠기는 경우 대응</p>
+            </a>
+            <a href="manual-detail.html?category=usage&id=2" class="manual-item">
+              <div class="manual-item-header">
+                <strong>2.2. 차량 상태 불량 매뉴얼</strong>
+                <span class="badge badge-info">일반</span>
+              </div>
+              <p class="manual-item-desc">청결/흡연, 파손/손상 발견 시 대응</p>
+            </a>
+            <a href="manual-detail.html?category=usage&id=3" class="manual-item">
+              <div class="manual-item-header">
+                <strong>2.3. 주유/충전 카드 문제 매뉴얼</strong>
+                <span class="badge badge-info">일반</span>
+              </div>
+              <p class="manual-item-desc">카드 없음, 결제 오류, 개인카드 결제 시 대응</p>
+            </a>
+          </div>
+        </article>
+      </section>
+
+      <section class="column right-column">
+        <article class="card category-card">
+          <div class="card-header">
+            <h2>3. 예약/결제</h2>
+            <span class="badge badge-warning">정책 및 과금</span>
+          </div>
+          <p class="card-description">고객의 금전적 문제와 직결되는 민감한 부분입니다.</p>
+          <div class="manual-list">
+            <a href="manual-detail.html?category=payment&id=1" class="manual-item">
+              <div class="manual-item-header">
+                <strong>3.1. 예약 변경 및 취소/환불 매뉴얼</strong>
+                <span class="badge badge-info">일반</span>
+              </div>
+              <p class="manual-item-desc">시점별 취소 수수료 및 환불 정책</p>
+            </a>
+            <a href="manual-detail.html?category=payment&id=2" class="manual-item">
+              <div class="manual-item-header">
+                <strong>3.2. 과금 및 요금 이의제기 매뉴얼</strong>
+                <span class="badge badge-warning">주의</span>
+              </div>
+              <p class="manual-item-desc">주행 요금, 하이패스, 패널티 과금 설명 및 환불</p>
+            </a>
+            <a href="manual-detail.html?category=payment&id=3" class="manual-item">
+              <div class="manual-item-header">
+                <strong>3.3. 분실물 처리 매뉴얼</strong>
+                <span class="badge badge-info">일반</span>
+              </div>
+              <p class="manual-item-desc">반납 직후 및 경과 시 분실물 처리 절차</p>
+            </a>
+          </div>
+        </article>
+
+        <article class="card category-card">
+          <div class="card-header">
+            <h2>4. 가입/기타</h2>
+            <span class="badge badge-neutral">기타</span>
+          </div>
+          <p class="card-description">회원 가입, 면허 인증, 쏘카존 관련 문의</p>
+          <div class="manual-list">
+            <a href="manual-detail.html?category=other&id=1" class="manual-item">
+              <div class="manual-item-header">
+                <strong>4.1. 회원 가입 및 면허 인증 매뉴얼</strong>
+                <span class="badge badge-info">일반</span>
+              </div>
+              <p class="manual-item-desc">면허증 인식 실패, 본인 인증 실패, 승인 지연 대응</p>
+            </a>
+            <a href="manual-detail.html?category=other&id=2" class="manual-item">
+              <div class="manual-item-header">
+                <strong>4.2. 쏘카존 관련 매뉴얼</strong>
+                <span class="badge badge-info">일반</span>
+              </div>
+              <p class="manual-item-desc">쏘카존 위치 안내, 주차 공간 부족, 지정 구역 외 반납 대응</p>
+            </a>
+          </div>
+        </article>
+
+        <article class="card search-manual-card">
+          <div class="card-header">
+            <h2>매뉴얼 검색</h2>
+            <span class="badge badge-info">검색</span>
+          </div>
+          <div class="search-box">
+            <input type="text" id="manual-search" placeholder="키워드로 매뉴얼 검색..." class="search-input">
+            <button id="manual-search-btn" class="btn btn-primary">검색</button>
+          </div>
+          <div id="manual-search-results" class="search-results">
+            <p class="placeholder">검색어를 입력하세요.</p>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <footer class="page-footer">
+      CallCenter AI Demo v0.1.0 · 상담 메뉴얼 모음
+    </footer>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
+

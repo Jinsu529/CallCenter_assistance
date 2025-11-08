@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>콜 종료 후처리 - CallCenter AI Demo</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="layout">
+    <nav class="main-nav">
+      <a href="index.html" class="nav-link">실시간 상담</a>
+      <a href="debriefing.html" class="nav-link active">콜 종료 후처리</a>
+      <a href="manual.html" class="nav-link">메뉴얼 모음</a>
+      <a href="admin.html" class="nav-link">관리자 대시보드</a>
+    </nav>
+    <header class="page-header">
+      <div class="title-group">
+        <h1>📋 콜 종료 후처리</h1>
+        <p class="subtitle">AI 상담 자동 요약 & 감정 노동 수치화 리포트</p>
+      </div>
+      <div class="header-metrics">
+        <div class="header-metric">
+          <span class="metric-label">콜 ID</span>
+          <span class="metric-value" id="call-id">A-2048</span>
+        </div>
+        <div class="header-metric">
+          <span class="metric-label">통화 시간</span>
+          <span class="metric-value" id="call-duration">05:32</span>
+        </div>
+        <div class="header-metric">
+          <span class="metric-label">상태</span>
+          <span class="metric-value state">종료</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="dashboard">
+      <section class="column left-column">
+        <article class="card summary-card">
+          <div class="card-header">
+            <h2>AI 상담 자동 요약</h2>
+            <span class="badge badge-info">자동 생성</span>
+          </div>
+          <div class="summary-content">
+            <div class="summary-section">
+              <h3>주요 문의</h3>
+              <div id="inquiry-summary" class="summary-text">
+                <p>고객이 배송 지연에 대해 불만을 표시하며, 환불을 요청했습니다. 주문번호는 #12345이며, 3일 전 주문한 상품이 아직 배송되지 않았습니다.</p>
+              </div>
+            </div>
+            <div class="summary-section">
+              <h3>처리 결과</h3>
+              <div id="result-summary" class="summary-text">
+                <p>배송 지연 사유를 확인하고 즉시 배송 조치를 취했습니다. 추가로 배송비를 환불 처리했으며, 고객은 만족스러워하며 통화를 종료했습니다.</p>
+              </div>
+            </div>
+            <div class="summary-section">
+              <h3>고객 감정</h3>
+              <div id="emotion-summary" class="summary-text">
+                <p><strong>초기:</strong> 분노 75%, 불만 20%<br>
+                <strong>중기:</strong> 불만 50%, 중립 40%<br>
+                <strong>종료:</strong> 중립 60%, 긍정 30%</p>
+              </div>
+            </div>
+          </div>
+          <div class="summary-actions">
+            <button class="btn btn-primary">확인</button>
+            <button class="btn btn-outline">수정</button>
+          </div>
+        </article>
+
+        <article class="card emotion-labor-card">
+          <div class="card-header">
+            <h2>감정 노동 수치화 리포트</h2>
+            <span class="badge badge-warning">적대적 콜</span>
+          </div>
+          <div class="labor-metrics">
+            <div class="labor-metric">
+              <div class="labor-metric-header">
+                <span>적대적 콜 태그</span>
+              </div>
+              <div id="hostile-tags" class="tag-list">
+                <span class="tag tag-danger">폭언</span>
+                <span class="tag tag-warning">장시간 불만</span>
+                <span class="tag tag-info">고성</span>
+              </div>
+            </div>
+            <div class="labor-metric">
+              <div class="labor-metric-header">
+                <span>감정 노동 지수</span>
+                <span class="metric-value">82 / 100</span>
+              </div>
+              <div class="progress">
+                <div class="progress-fill" style="width: 82%"></div>
+              </div>
+            </div>
+            <div class="labor-metric">
+              <div class="labor-metric-header">
+                <span>통화 강도</span>
+                <span class="metric-value">높음</span>
+              </div>
+            </div>
+          </div>
+          <div class="labor-note">
+            <p>이 통화는 적대적 콜로 분류되었습니다. 상담사 휴식 권고 및 후행적 보상이 필요합니다.</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="column right-column">
+        <article class="card transcript-full-card">
+          <div class="card-header">
+            <h2>전체 대화 내용</h2>
+            <span class="badge badge-neutral">전사본</span>
+          </div>
+          <div id="full-transcript" class="transcript-list">
+            <div class="transcript-item customer">
+              <div class="transcript-meta">고객 · 00:05</div>
+              <p>안녕하세요, 배송이 너무 늦어서 불만입니다. 언제 오는지 알려주세요.</p>
+            </div>
+            <div class="transcript-item agent">
+              <div class="transcript-meta">상담원 · 00:12</div>
+              <p>안녕하세요. 배송 지연으로 불편을 드려 죄송합니다. 주문번호를 알려주시면 확인해드리겠습니다.</p>
+            </div>
+            <div class="transcript-item customer">
+              <div class="transcript-meta">고객 · 00:25</div>
+              <p>주문번호는 #12345입니다. 3일 전에 주문했는데 아직도 안 왔어요!</p>
+            </div>
+            <div class="transcript-item agent">
+              <div class="transcript-meta">상담원 · 00:35</div>
+              <p>확인해보니 배송이 지연되었네요. 즉시 배송 조치를 취하겠습니다. 추가로 배송비도 환불해드리겠습니다.</p>
+            </div>
+            <div class="transcript-item customer">
+              <div class="transcript-meta">고객 · 01:20</div>
+              <p>그럼 언제쯤 받을 수 있나요?</p>
+            </div>
+            <div class="transcript-item agent">
+              <div class="transcript-meta">상담원 · 01:30</div>
+              <p>내일 오전 중에 배송될 예정입니다. 불편을 드려 정말 죄송합니다.</p>
+            </div>
+            <div class="transcript-item customer">
+              <div class="transcript-meta">고객 · 02:00</div>
+              <p>알겠습니다. 감사합니다.</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="card action-card">
+          <div class="card-header">
+            <h2>후처리 액션</h2>
+            <span class="badge badge-info">작업</span>
+          </div>
+          <div class="action-list">
+            <div class="action-item">
+              <input type="checkbox" id="action1" checked>
+              <label for="action1">배송 조치 완료</label>
+            </div>
+            <div class="action-item">
+              <input type="checkbox" id="action2" checked>
+              <label for="action2">배송비 환불 처리</label>
+            </div>
+            <div class="action-item">
+              <input type="checkbox" id="action3">
+              <label for="action3">고객 만족도 조사</label>
+            </div>
+            <div class="action-item">
+              <input type="checkbox" id="action4">
+              <label for="action4">관리자 보고</label>
+            </div>
+          </div>
+          <button class="btn btn-primary" style="margin-top: 16px;">후처리 완료</button>
+        </article>
+      </section>
+    </main>
+
+    <footer class="page-footer">
+      CallCenter AI Demo v0.1.0 · AI 상담 자동 요약 & 감정 노동 분석
+    </footer>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
+

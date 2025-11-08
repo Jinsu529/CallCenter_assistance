@@ -8,15 +8,21 @@
 </head>
 <body>
   <div class="layout">
+    <nav class="main-nav">
+      <a href="index.html" class="nav-link active">실시간 상담</a>
+      <a href="debriefing.html" class="nav-link">콜 종료 후처리</a>
+      <a href="manual.html" class="nav-link">메뉴얼 모음</a>
+      <a href="admin.html" class="nav-link">관리자 대시보드</a>
+    </nav>
     <header class="page-header">
       <div class="title-group">
         <h1>☎️ CallCenter AI Demo</h1>
-        <p class="subtitle">실시간 음성 감정 분석 & 상담원 코칭</p>
+        <p class="subtitle">실시간 상담 어시스턴트</p>
         <div class="assistant-panel">
           <img src="assets/assistant-avatar.png" alt="AI 상담원 캐릭터" class="assistant-avatar">
           <div class="assistant-bubble">
-            지금 고객 감정은 <strong>분노 82%</strong> 입니다.<br>
-            차분한 톤으로 사과 후 해결책을 안내하세요.
+            고객 의도를 분석하여 최적의 솔루션을 추천합니다.<br>
+            제시된 대응 매뉴얼을 선택하여 즉시 활용하세요.
           </div>
         </div>
       </div>
@@ -55,73 +61,64 @@
           </ul>
         </article>
 
-        <article class="card audio-card">
-          <div class="card-header">
-            <h2>실시간 음성 신호</h2>
-            <span id="audio-db" class="badge badge-neutral">-- dB</span>
-          </div>
-          <canvas id="voice-wave" height="140"></canvas>
-          <div class="audio-meter">
-            <div class="audio-meter-fill" id="audio-level-fill"></div>
-          </div>
-          <div class="audio-scale">
-            <span>조용</span>
-            <span>보통</span>
-            <span>고성</span>
-          </div>
-        </article>
-
         <article class="card transcript-card">
           <div class="card-header">
-            <h2>실시간 인식 (STT)</h2>
+            <h2>실시간 STT 및 고객 의도 분석</h2>
             <span id="stt-latency" class="badge badge-neutral">Latency -- ms</span>
           </div>
           <div id="transcript-list" class="transcript-list">
             <p class="placeholder">대화가 시작되면 여기에 텍스트가 표시됩니다.</p>
           </div>
+          <div class="intent-section">
+            <h3>고객 의도</h3>
+            <div id="intent-list" class="intent-list">
+              <span class="placeholder">의도 분석 중...</span>
+            </div>
+          </div>
         </article>
       </section>
 
       <section class="column right-column">
-        <article class="card emotion-card">
+        <article class="card solution-card">
           <div class="card-header">
-            <h2>고객 감정 분석</h2>
-            <span id="primary-emotion" class="badge badge-neutral">대기 중</span>
+            <h2>AI 솔루션 자동 추천</h2>
+            <span class="badge badge-info">AI Copilot</span>
           </div>
-          <div class="emotion-body">
-            <div class="emotion-chart">
-              <canvas id="emotion-chart"></canvas>
+          <div class="solution-tabs">
+            <button class="tab-btn active" data-tab="manual">대응 매뉴얼</button>
+            <button class="tab-btn" data-tab="questions">예상 질문</button>
+            <button class="tab-btn" data-tab="script">추천 스크립트</button>
+          </div>
+          <div class="solution-content">
+            <div id="manual-content" class="tab-content active">
+              <ul id="manual-list" class="solution-list">
+                <li class="placeholder">고객 의도에 맞는 대응 매뉴얼이 표시됩니다.</li>
+              </ul>
             </div>
-            <div class="emotion-metrics">
-              <div class="metric">
-                <span class="metric-label">위험도</span>
-                <span id="risk-score" class="metric-value">--</span>
-              </div>
-              <div class="metric">
-                <span class="metric-label">음성 톤</span>
-                <span id="tone-score" class="metric-value">--</span>
-              </div>
-              <div class="metric">
-                <span class="metric-label">발화 속도</span>
-                <span id="wpm-score" class="metric-value">-- WPM</span>
-              </div>
+            <div id="questions-content" class="tab-content">
+              <ul id="questions-list" class="solution-list">
+                <li class="placeholder">예상 질문이 표시됩니다.</li>
+              </ul>
+            </div>
+            <div id="script-content" class="tab-content">
+              <ul id="script-list" class="solution-list">
+                <li class="placeholder">추천 스크립트가 표시됩니다.</li>
+              </ul>
             </div>
           </div>
         </article>
 
-        <article class="card suggestion-card">
+        <article class="card search-card">
           <div class="card-header">
-            <h2>추천 대응 전략</h2>
-            <span class="badge badge-info">AI Copilot</span>
+            <h2>AI 지식 검색</h2>
+            <span class="badge badge-info">검색</span>
           </div>
-          <ul id="suggestion-list" class="suggestion-list">
-            <li class="placeholder">고객 감정이 인식되면 전략이 안내됩니다.</li>
-          </ul>
-          <div class="keyword-section">
-            <h3>핵심 키워드</h3>
-            <div id="keyword-list" class="keyword-list">
-              <span class="placeholder">아직 키워드가 없습니다.</span>
-            </div>
+          <div class="search-box">
+            <input type="text" id="knowledge-search" placeholder="검색어를 입력하세요..." class="search-input">
+            <button id="search-btn" class="btn btn-primary">검색</button>
+          </div>
+          <div id="search-results" class="search-results">
+            <p class="placeholder">검색 결과가 여기에 표시됩니다.</p>
           </div>
         </article>
 
@@ -151,6 +148,7 @@
         </article>
       </section>
     </main>
+
 
     <footer class="page-footer">
       CallCenter AI Demo v0.1.0 · Whisper + KoBERT + FastAPI + Electron

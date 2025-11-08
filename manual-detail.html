@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>상담 매뉴얼 상세 - CallCenter AI Demo</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="layout">
+    <nav class="main-nav">
+      <a href="index.html" class="nav-link">실시간 상담</a>
+      <a href="debriefing.html" class="nav-link">콜 종료 후처리</a>
+      <a href="manual.html" class="nav-link active">메뉴얼 모음</a>
+      <a href="admin.html" class="nav-link">관리자 대시보드</a>
+    </nav>
+    <header class="page-header">
+      <div class="title-group">
+        <h1 id="manual-title">1.1. 교통사고 발생 시 대응 매뉴얼</h1>
+        <p class="subtitle" id="manual-subtitle">대인/대물 사고 시 즉각 대응 절차</p>
+      </div>
+      <div class="header-metrics">
+        <div class="header-metric">
+          <span class="metric-label">카테고리</span>
+          <span class="metric-value" id="manual-category">긴급/사고</span>
+        </div>
+        <div class="header-metric">
+          <span class="metric-label">우선순위</span>
+          <span class="metric-value" id="manual-priority" style="color: #b8323c;">최고</span>
+        </div>
+        <div class="header-metric">
+          <span class="metric-label">최근 업데이트</span>
+          <span class="metric-value">2024.01.15</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="dashboard">
+      <section class="column left-column">
+        <article class="card manual-detail-card">
+          <div class="card-header">
+            <h2>매뉴얼 내용</h2>
+            <span class="badge badge-danger" id="manual-badge">긴급</span>
+          </div>
+          <div id="manual-content" class="manual-content">
+            <!-- 매뉴얼 내용이 여기에 동적으로 로드됩니다 -->
+          </div>
+        </article>
+
+        <article class="card script-card">
+          <div class="card-header">
+            <h2>추천 스크립트</h2>
+            <span class="badge badge-info">대화 예시</span>
+          </div>
+          <div id="script-content" class="script-content">
+            <!-- 스크립트 내용이 여기에 동적으로 로드됩니다 -->
+          </div>
+        </article>
+      </section>
+
+      <section class="column right-column">
+        <article class="card keywords-card">
+          <div class="card-header">
+            <h2>AI 감지 키워드</h2>
+            <span class="badge badge-info">자동 추천</span>
+          </div>
+          <div id="keywords-content" class="keywords-content">
+            <!-- 키워드가 여기에 동적으로 로드됩니다 -->
+          </div>
+        </article>
+
+        <article class="card related-card">
+          <div class="card-header">
+            <h2>관련 매뉴얼</h2>
+            <span class="badge badge-neutral">추천</span>
+          </div>
+          <div id="related-manuals" class="related-manuals">
+            <!-- 관련 매뉴얼이 여기에 동적으로 로드됩니다 -->
+          </div>
+        </article>
+
+        <article class="card action-card">
+          <div class="card-header">
+            <h2>즉시 활용</h2>
+            <span class="badge badge-success">빠른 액션</span>
+          </div>
+          <div class="action-buttons">
+            <button class="btn btn-primary" id="copy-script-btn">스크립트 복사</button>
+            <button class="btn btn-outline" id="open-in-call-btn">상담 화면에서 열기</button>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <footer class="page-footer">
+      CallCenter AI Demo v0.1.0 · 상담 매뉴얼 상세
+    </footer>
+  </div>
+  <script src="app.js"></script>
+  <script>
+    // URL 파라미터에서 매뉴얼 정보 가져오기
+    const urlParams = new URLSearchParams(window.location.search);
+    const category = urlParams.get('category') || 'emergency';
+    const id = urlParams.get('id') || '1';
+
+    // 매뉴얼 데이터
+    const manualData = {
+      emergency: {
+        1: {
+          title: "1.1. 교통사고 발생 시 대응 매뉴얼",
+          subtitle: "대인/대물 사고 시 즉각 대응 절차",
+          category: "긴급/사고",
+          priority: "최고",
+          badge: "긴급",
+          keywords: ["사고", "교통사고", "충돌", "경찰", "119", "보험", "블랙박스", "2차 사고"],
+          content: `
+            <div class="manual-step">
+              <h3>Step 1: 고객 안전 확인</h3>
+              <p><strong>필수 질문:</strong> "다치신 곳은 없으신가요?"</p>
+              <ul>
+                <li>고객의 신체 상태를 최우선으로 확인</li>
+                <li>응급 상황 시 즉시 119 신고 안내</li>
+                <li>상대방의 부상 여부도 확인</li>
+              </ul>
+            </div>
+            <div class="manual-step">
+              <h3>Step 2: 2차 사고 방지</h3>
+              <p><strong>즉시 안내:</strong></p>
+              <ul>
+                <li>비상등 켜기</li>
+                <li>삼각대 설치 (차량 후방 50m 이상)</li>
+                <li>가능하면 안전한 곳으로 차량 이동</li>
+                <li>도로 상황에 따라 경찰 신고 권장</li>
+              </ul>
+            </div>
+            <div class="manual-step">
+              <h3>Step 3: 필수 정보 확보</h3>
+              <p><strong>확인 사항:</strong></p>
+              <ul>
+                <li>경찰/119 신고 여부 확인</li>
+                <li>상대방 차량 정보 (차량번호, 보험사, 연락처)</li>
+                <li>사고 발생 시간 및 장소</li>
+                <li>보험 접수 안내 (쏘카 보험팀 연락)</li>
+                <li>현장 사진 촬영 (전면, 후면, 측면, 손상 부위)</li>
+              </ul>
+            </div>
+            <div class="manual-step">
+              <h3>Step 4: 현장 사진/블랙박스 확보</h3>
+              <p><strong>앱을 통한 접수 방법:</strong></p>
+              <ul>
+                <li>쏘카 앱 → "사고 신고" 메뉴</li>
+                <li>사진 업로드 (최소 5장 이상)</li>
+                <li>블랙박스 영상 다운로드 안내</li>
+                <li>사고 접수 번호 확인 및 전달</li>
+              </ul>
+            </div>
+          `,
+          script: `
+            <div class="script-item">
+              <p><strong>상담원:</strong> "안녕하세요, 쏘카 상담센터입니다. 사고가 발생하셨다고 하셨는데, 다치신 곳은 없으신가요?"</p>
+            </div>
+            <div class="script-item">
+              <p><strong>고객:</strong> "네, 괜찮습니다. 하지만 차가 많이 찌그러졌어요."</p>
+            </div>
+            <div class="script-item">
+              <p><strong>상담원:</strong> "다행입니다. 먼저 2차 사고를 방지하기 위해 비상등을 켜시고, 삼각대를 차량 후방 50m 이상 떨어진 곳에 설치해 주세요. 경찰 신고는 하셨나요?"</p>
+            </div>
+            <div class="script-item">
+              <p><strong>고객:</strong> "아직 안 했어요."</p>
+            </div>
+            <div class="script-item">
+              <p><strong>상담원:</strong> "알겠습니다. 경찰 신고를 먼저 진행해 주시고, 상대방 차량 정보(차량번호, 보험사, 연락처)를 확인해 주세요. 그리고 현장 사진을 최소 5장 이상 촬영해 주시고, 쏘카 앱의 '사고 신고' 메뉴를 통해 업로드해 주세요."</p>
+            </div>
+          `,
+          related: [
+            { title: "1.2. 차량 고장 및 견인 매뉴얼", link: "manual-detail.html?category=emergency&id=2" },
+            { title: "3.2. 과금 및 요금 이의제기 매뉴얼", link: "manual-detail.html?category=payment&id=2" }
+          ]
+        },
+        2: {
+          title: "1.2. 차량 고장 및 견인 매뉴얼",
+          subtitle: "시동 불량, 경고등 점등, 타이어 펑크 등 증상별 대응",
+          category: "긴급/사고",
+          priority: "최고",
+          badge: "긴급",
+          keywords: ["고장", "시동", "경고등", "타이어", "펑크", "견인", "출동"],
+          content: `
+            <div class="manual-step">
+              <h3>증상별 대응</h3>
+              <div class="symptom-item">
+                <h4>시동 불량</h4>
+                <ul>
+                  <li>배터리 방전 가능성 확인</li>
+                  <li>긴급 출동 서비스 접수</li>
+                  <li>가까운 쏘카존/협력사 안내</li>
+                </ul>
+              </div>
+              <div class="symptom-item">
+                <h4>경고등 점등</h4>
+                <ul>
+                  <li>경고등 종류 확인 (엔진, 브레이크, 타이어 등)</li>
+                  <li>안전 운행 가능 여부 판단</li>
+                  <li>필요 시 긴급 출동 서비스 접수</li>
+                </ul>
+              </div>
+              <div class="symptom-item">
+                <h4>타이어 펑크</h4>
+                <ul>
+                  <li>스페어 타이어 확인</li>
+                  <li>긴급 출동 서비스 접수</li>
+                  <li>가까운 타이어 교체 센터 안내</li>
+                </ul>
+              </div>
+            </div>
+            <div class="manual-step">
+              <h3>긴급 출동 서비스 접수</h3>
+              <ul>
+                <li>쏘카 앱 → "긴급 출동" 메뉴</li>
+                <li>현재 위치 및 증상 입력</li>
+                <li>출동 시간 안내 (평균 30분 이내)</li>
+                <li>대차량 지원 여부 확인</li>
+              </ul>
+            </div>
+          `,
+          script: `
+            <div class="script-item">
+              <p><strong>상담원:</strong> "차량 고장이 발생하셨다고 하셨는데, 어떤 증상인가요?"</p>
+            </div>
+            <div class="script-item">
+              <p><strong>고객:</strong> "시동이 안 걸려요."</p>
+            </div>
+            <div class="script-item">
+              <p><strong>상담원:</strong> "배터리 방전 가능성이 있습니다. 쏘카 앱의 '긴급 출동' 메뉴를 통해 출동 서비스를 접수해 주세요. 평균 30분 이내에 출동할 예정입니다."</p>
+            </div>
+          `,
+          related: [
+            { title: "1.1. 교통사고 발생 시 대응 매뉴얼", link: "manual-detail.html?category=emergency&id=1" },
+            { title: "2.1. 스마트키 (도어) 오류 매뉴얼", link: "manual-detail.html?category=usage&id=1" }
+          ]
+        },
+        3: {
+          title: "1.3. 법규 위반 인지 시 매뉴얼",
+          subtitle: "음주 운전, 무면허 운전 의심 시 대응",
+          category: "긴급/사고",
+          priority: "높음",
+          badge: "주의",
+          keywords: ["음주", "무면허", "법규", "위반", "경고"],
+          content: `
+            <div class="manual-step">
+              <h3>음주 운전 의심 시</h3>
+              <ul>
+                <li>즉시 운전 중단 요청</li>
+                <li>대리 운전 서비스 안내</li>
+                <li>차량 반납 조치</li>
+                <li>법적 책임 안내</li>
+              </ul>
+            </div>
+            <div class="manual-step">
+              <h3>무면허 운전 의심 시</h3>
+              <ul>
+                <li>면허증 확인 요청</li>
+                <li>무면허 확인 시 즉시 반납 요청</li>
+                <li>법적 책임 안내</li>
+                <li>계정 정지 조치</li>
+              </ul>
+            </div>
+          `,
+          script: `
+            <div class="script-item">
+              <p><strong>상담원:</strong> "죄송하지만, 음주 운전은 법적으로 금지되어 있습니다. 즉시 운전을 중단해 주시고, 대리 운전 서비스를 이용하시거나 차량을 반납해 주세요."</p>
+            </div>
+          `,
+          related: []
+        }
+      },
+      usage: {
+        1: {
+          title: "2.1. 스마트키 (도어) 오류 매뉴얼",
+          subtitle: "문이 안 열리거나 안 잠기는 경우 대응",
+          category: "차량 이용 중",
+          priority: "높음",
+          badge: "자주 발생",
+          keywords: ["문", "도어", "열림", "잠금", "스마트키", "앱", "오류"],
+          content: `
+            <div class="manual-step">
+              <h3>상황별 대응</h3>
+              <div class="symptom-item">
+                <h4>"문이 안 열려요"</h4>
+                <ul>
+                  <li>앱 재시작 (완전 종료 후 재실행)</li>
+                  <li>통신 상태 확인 (지하 주차장 등 통신 불량 지역 확인)</li>
+                  <li>통신 지역으로 이동 요청</li>
+                  <li>원격 제어 지원 (상담사가 앱에서 제어)</li>
+                </ul>
+              </div>
+              <div class="symptom-item">
+                <h4>"문이 안 잠겨요"</h4>
+                <ul>
+                  <li>앱 재시작</li>
+                  <li>수동 잠금 방법 안내 (차량 키 또는 앱)</li>
+                  <li>원격 제어 지원</li>
+                </ul>
+              </div>
+              <div class="symptom-item">
+                <h4>"반납이 안 돼요"</h4>
+                <ul>
+                  <li>차량이 지정된 쏘카존에 있는지 확인</li>
+                  <li>앱 재시작</li>
+                  <li>원격 제어 지원</li>
+                </ul>
+              </div>
+            </div>
+            <div class="manual-step">
+              <h3>원인별 해결 방법</h3>
+              <ul>
+                <li><strong>통신 불량:</strong> 지하 주차장 등 → 통신 지역으로 이동</li>
+                <li><strong>앱 오류:</strong> 앱 완전 종료 후 재실행</li>
+                <li><strong>차량 방전:</strong> 긴급 출동 서비스 접수</li>
+              </ul>
+            </div>
+          `,
+          script: `
+            <div class="script-item">
+              <p><strong>상담원:</strong> "문이 안 열리신다고 하셨는데, 현재 어디에 계신가요?"</p>
+            </div>
+            <div class="script-item">
+              <p><strong>고객:</strong> "지하 주차장이에요."</p>
+            </div>
+            <div class="script-item">
+              <p><strong>상담원:</strong> "지하 주차장은 통신이 약할 수 있습니다. 먼저 앱을 완전히 종료한 후 재실행해 보시고, 그래도 안 되시면 지상으로 나와서 다시 시도해 주세요."</p>
+            </div>
+          `,
+          related: [
+            { title: "1.2. 차량 고장 및 견인 매뉴얼", link: "manual-detail.html?category=emergency&id=2" },
+            { title: "2.2. 차량 상태 불량 매뉴얼", link: "manual-detail.html?category=usage&id=2" }
+          ]
+        },
+        2: {
+          title: "2.2. 차량 상태 불량 매뉴얼",
+          subtitle: "청결/흡연, 파손/손상 발견 시 대응",
+          category: "차량 이용 중",
+          priority: "보통",
+          badge: "일반",
+          keywords: ["청결", "흡연", "오염", "파손", "손상", "사진"],
+          content: `
+            <div class="manual-step">
+              <h3>청결/흡연 문제</h3>
+              <ul>
+                <li>사진 전송 요청 (앱을 통한 업로드)</li>
+                <li>이전 사용자 패널티 부과 안내</li>
+                <li>청소 서비스 안내 (필요 시)</li>
+              </ul>
+            </div>
+            <div class="manual-step">
+              <h3>파손/손상 발견</h3>
+              <ul>
+                <li>이용 전 차량 파손 부위 발견 시 사진 촬영</li>
+                <li>앱으로 사진 전송 방법 안내</li>
+                <li>고객 면책 확인</li>
+                <li>파손 부위 수리 조치 안내</li>
+              </ul>
+            </div>
+          `,
+          script: `
+            <div class="script-item">
+              <p><strong>상담원:</strong> "차량 상태가 불량하시다고 하셨는데, 어떤 문제인가요?"</p>
+            </div>
+            <div class="script-item">
+              <p><strong>고객:</strong> "이전 사용자가 담배를 피운 것 같아요."</p>
+            </div>
+            <div class="script-item">
+              <p><strong>상담원:</strong> "사진을 촬영하셔서 쏘카 앱의 '차량 상태 신고' 메뉴를 통해 업로드해 주세요. 이전 사용자에게 패널티가 부과되며, 필요하시면 청소 서비스를 안내해 드리겠습니다."</p>
+            </div>
+          `,
+          related: [
+            { title: "2.1. 스마트키 (도어) 오류 매뉴얼", link: "manual-detail.html?category=usage&id=1" },
+            { title: "3.2. 과금 및 요금 이의제기 매뉴얼", link: "manual-detail.html?category=payment&id=2" }
+          ]
+        },
+        3: {
+          title: "2.3. 주유/충전 카드 문제 매뉴얼",
+          subtitle: "카드 없음, 결제 오류, 개인카드 결제 시 대응",
+          category: "차량 이용 중",
+          priority: "보통",
+          badge: "일반",
+          keywords: ["주유", "충전", "카드", "결제", "환불"],
+          content: `
+            <div class="manual-step">
+              <h3>상황별 대응</h3>
+              <div class="symptom-item">
+                <h4>"카드가 없어요"</h4>
+                <ul>
+                  <li>카드 위치 안내 (선바이저, 글로브박스)</li>
+                  <li>카드 미발견 시 긴급 출동 서비스 접수</li>
+                </ul>
+              </div>
+              <div class="symptom-item">
+                <h4>"결제가 안 돼요"</h4>
+                <ul>
+                  <li>카드 상태 확인 (손상 여부)</li>
+                  <li>주유소/충전소 직원에게 문의</li>
+                  <li>대체 카드 발급 안내</li>
+                </ul>
+              </div>
+              <div class="symptom-item">
+                <h4>"개인카드로 결제했어요"</h4>
+                <ul>
+                  <li>영수증 촬영 및 앱 업로드</li>
+                  <li>환불 절차 안내 (3-5일 소요)</li>
+                  <li>환불 금액 확인</li>
+                </ul>
+              </div>
+            </div>
+          `,
+          script: `
+            <div class="script-item">
+              <p><strong>상담원:</strong> "주유 카드를 찾을 수 없으시다고 하셨는데, 선바이저(썬바이저)나 글로브박스를 확인해 보셨나요?"</p>
+            </div>
+          `,
+          related: [
+            { title: "3.2. 과금 및 요금 이의제기 매뉴얼", link: "manual-detail.html?category=payment&id=2" }
+          ]
+        }
+      },
+      payment: {
+        1: {
+          title: "3.1. 예약 변경 및 취소/환불 매뉴얼",
+          subtitle: "시점별 취소 수수료 및 환불 정책",
+          category: "예약/결제",
+          priority: "보통",
+          badge: "일반",
+          keywords: ["예약", "취소", "환불", "수수료", "변경"],
+          content: `
+            <div class="manual-step">
+              <h3>시점별 정책</h3>
+              <div class="symptom-item">
+                <h4>이용 시작 전</h4>
+                <ul>
+                  <li>24시간 전 취소: 수수료 없음</li>
+                  <li>24시간 이내 취소: 수수료 발생</li>
+                  <li>쿠폰 환불: 쿠폰 유효기간 내 환불 가능</li>
+                </ul>
+              </div>
+              <div class="symptom-item">
+                <h4>이용 중</h4>
+                <ul>
+                  <li>중도 취소: 사용 시간만큼 과금</li>
+                  <li>환불 불가 (이미 사용 중)</li>
+                </ul>
+              </div>
+              <div class="symptom-item">
+                <h4>이용 종료 후</h4>
+                <ul>
+                  <li>환불 불가 (이미 이용 완료)</li>
+                  <li>과금 오류 시 환불 가능</li>
+                </ul>
+              </div>
+            </div>
+          `,
+          script: `
+            <div class="script-item">
+              <p><strong>상담원:</strong> "예약 취소를 원하시는군요. 이용 시작 24시간 전이면 수수료 없이 취소 가능합니다. 현재 시점을 확인해 보겠습니다."</p>
+            </div>
+          `,
+          related: [
+            { title: "3.2. 과금 및 요금 이의제기 매뉴얼", link: "manual-detail.html?category=payment&id=2" }
+          ]
+        },
+        2: {
+          title: "3.2. 과금 및 요금 이의제기 매뉴얼",
+          subtitle: "주행 요금, 하이패스, 패널티 과금 설명 및 환불",
+          category: "예약/결제",
+          priority: "높음",
+          badge: "주의",
+          keywords: ["과금", "요금", "하이패스", "패널티", "환불", "이의제기"],
+          content: `
+            <div class="manual-step">
+              <h3>과금 항목별 설명</h3>
+              <ul>
+                <li><strong>주행 요금:</strong> 시간당/거리당 요금</li>
+                <li><strong>하이패스 요금:</strong> 실제 통행료 기준</li>
+                <li><strong>패널티:</strong> 지연 반납, 흡연, 주차 위반 등</li>
+              </ul>
+            </div>
+            <div class="manual-step">
+              <h3>이의제기 및 환불 절차</h3>
+              <ul>
+                <li>과금 내역 확인 (앱 → 결제 내역)</li>
+                <li>이의제기 사유 작성</li>
+                <li>관련 증빙 자료 제출 (사진, 영수증 등)</li>
+                <li>환불 처리 (3-5일 소요)</li>
+              </ul>
+            </div>
+          `,
+          script: `
+            <div class="script-item">
+              <p><strong>상담원:</strong> "과금에 대해 이의가 있으시군요. 앱의 결제 내역에서 해당 항목을 확인해 주시고, 이의제기 사유와 관련 증빙 자료를 제출해 주시면 검토 후 환불 처리해 드리겠습니다."</p>
+            </div>
+          `,
+          related: [
+            { title: "3.1. 예약 변경 및 취소/환불 매뉴얼", link: "manual-detail.html?category=payment&id=1" },
+            { title: "3.3. 분실물 처리 매뉴얼", link: "manual-detail.html?category=payment&id=3" }
+          ]
+        },
+        3: {
+          title: "3.3. 분실물 처리 매뉴얼",
+          subtitle: "반납 직후 및 경과 시 분실물 처리 절차",
+          category: "예약/결제",
+          priority: "보통",
+          badge: "일반",
+          keywords: ["분실물", "물건", "찾기", "반납"],
+          content: `
+            <div class="manual-step">
+              <h3>반납 직후 (다음 사용자 전)</h3>
+              <ul>
+                <li>즉시 차량 원격 제어 (문 열림)</li>
+                <li>다음 사용자와의 중재</li>
+                <li>분실물 확인 및 회수 안내</li>
+              </ul>
+            </div>
+            <div class="manual-step">
+              <h3>반납 후 상당 시간 경과 시</h3>
+              <ul>
+                <li>분실물 센터 인계</li>
+                <li>분실물 보관 기간 안내 (30일)</li>
+                <li>회수 절차 안내</li>
+              </ul>
+            </div>
+          `,
+          script: `
+            <div class="script-item">
+              <p><strong>상담원:</strong> "분실물을 찾고 계시는군요. 반납 직후라면 차량 원격 제어를 통해 문을 열어 드릴 수 있습니다. 다음 사용자가 있을 경우 중재해 드리겠습니다."</p>
+            </div>
+          `,
+          related: [
+            { title: "3.2. 과금 및 요금 이의제기 매뉴얼", link: "manual-detail.html?category=payment&id=2" }
+          ]
+        }
+      },
+      other: {
+        1: {
+          title: "4.1. 회원 가입 및 면허 인증 매뉴얼",
+          subtitle: "면허증 인식 실패, 본인 인증 실패, 승인 지연 대응",
+          category: "가입/기타",
+          priority: "보통",
+          badge: "일반",
+          keywords: ["가입", "면허", "인증", "승인", "오류"],
+          content: `
+            <div class="manual-step">
+              <h3>면허증 인식 실패</h3>
+              <ul>
+                <li>면허증 사진 재촬영 (명확하게, 반사 없이)</li>
+                <li>면허증 상태 확인 (손상, 만료 여부)</li>
+                <li>수동 인증 절차 안내</li>
+              </ul>
+            </div>
+            <div class="manual-step">
+              <h3>본인 인증 실패</h3>
+              <ul>
+                <li>통신사 확인 (SKT, KT, LGU+)</li>
+                <li>본인 명의 확인</li>
+                <li>대체 인증 방법 안내 (공동인증서 등)</li>
+              </ul>
+            </div>
+            <div class="manual-step">
+              <h3>승인 지연</h3>
+              <ul>
+                <li>평균 승인 시간 안내 (1-2일)</li>
+                <li>심사 중 상태 확인</li>
+                <li>추가 서류 요청 시 제출 안내</li>
+              </ul>
+            </div>
+          `,
+          script: `
+            <div class="script-item">
+              <p><strong>상담원:</strong> "면허증 인식이 안 되시는군요. 면허증을 명확하게, 반사 없이 재촬영해 주시고, 그래도 안 되시면 수동 인증 절차를 안내해 드리겠습니다."</p>
+            </div>
+          `,
+          related: [
+            { title: "4.2. 쏘카존 관련 매뉴얼", link: "manual-detail.html?category=other&id=2" }
+          ]
+        },
+        2: {
+          title: "4.2. 쏘카존 관련 매뉴얼",
+          subtitle: "쏘카존 위치 안내, 주차 공간 부족, 지정 구역 외 반납 대응",
+          category: "가입/기타",
+          priority: "보통",
+          badge: "일반",
+          keywords: ["쏘카존", "주차", "위치", "반납", "구역"],
+          content: `
+            <div class="manual-step">
+              <h3>"쏘카존을 못 찾겠어요"</h3>
+              <ul>
+                <li>앱 내 지도 확인</li>
+                <li>주소 및 랜드마크 안내</li>
+                <li>실시간 위치 공유</li>
+              </ul>
+            </div>
+            <div class="manual-step">
+              <h3>"주차 공간이 없어요"</h3>
+              <ul>
+                <li>인근 쏘카존 안내</li>
+                <li>대기 시간 안내</li>
+                <li>예약 변경 안내</li>
+              </ul>
+            </div>
+            <div class="manual-step">
+              <h3>"지정 구역이 아닌 곳에 반납했어요"</h3>
+              <ul>
+                <li>이동 반납 수수료 안내</li>
+                <li>올바른 반납 위치 안내</li>
+                <li>수수료 면제 조건 확인</li>
+              </ul>
+            </div>
+          `,
+          script: `
+            <div class="script-item">
+              <p><strong>상담원:</strong> "쏘카존을 찾기 어려우시군요. 앱 내 지도를 확인해 주시고, 주소와 랜드마크를 안내해 드리겠습니다."</p>
+            </div>
+          `,
+          related: [
+            { title: "4.1. 회원 가입 및 면허 인증 매뉴얼", link: "manual-detail.html?category=other&id=1" }
+          ]
+        }
+      }
+    };
+
+    // 매뉴얼 로드
+    function loadManual() {
+      const manual = manualData[category] && manualData[category][id];
+      if (!manual) {
+        document.getElementById('manual-title').textContent = "매뉴얼을 찾을 수 없습니다";
+        return;
+      }
+
+      // 제목 및 메타 정보
+      document.getElementById('manual-title').textContent = manual.title;
+      document.getElementById('manual-subtitle').textContent = manual.subtitle;
+      document.getElementById('manual-category').textContent = manual.category;
+      document.getElementById('manual-priority').textContent = manual.priority;
+      document.getElementById('manual-badge').textContent = manual.badge;
+
+      // 매뉴얼 내용
+      document.getElementById('manual-content').innerHTML = manual.content;
+
+      // 스크립트
+      document.getElementById('script-content').innerHTML = manual.script;
+
+      // 키워드
+      const keywordsHtml = manual.keywords.map(kw => 
+        `<span class="keyword-chip">${kw}</span>`
+      ).join('');
+      document.getElementById('keywords-content').innerHTML = keywordsHtml;
+
+      // 관련 매뉴얼
+      if (manual.related && manual.related.length > 0) {
+        const relatedHtml = manual.related.map(rel => 
+          `<a href="${rel.link}" class="related-item">${rel.title}</a>`
+        ).join('');
+        document.getElementById('related-manuals').innerHTML = relatedHtml;
+      } else {
+        document.getElementById('related-manuals').innerHTML = '<p class="placeholder">관련 매뉴얼이 없습니다.</p>';
+      }
+    }
+
+    // 페이지 로드 시 매뉴얼 로드
+    loadManual();
+
+    // 스크립트 복사 버튼
+    document.getElementById('copy-script-btn').addEventListener('click', () => {
+      const scriptText = document.getElementById('script-content').textContent;
+      navigator.clipboard.writeText(scriptText).then(() => {
+        alert('스크립트가 복사되었습니다.');
+      });
+    });
+
+    // 상담 화면에서 열기 버튼
+    document.getElementById('open-in-call-btn').addEventListener('click', () => {
+      window.open('index.html', '_blank');
+    });
+  </script>
+</body>
+</html>
+

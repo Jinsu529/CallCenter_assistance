@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>관리자 대시보드 - CallCenter AI Demo</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="layout">
+    <nav class="main-nav">
+      <a href="index.html" class="nav-link">실시간 상담</a>
+      <a href="debriefing.html" class="nav-link">콜 종료 후처리</a>
+      <a href="manual.html" class="nav-link">메뉴얼 모음</a>
+      <a href="admin.html" class="nav-link active">관리자 대시보드</a>
+    </nav>
+    <header class="page-header">
+      <div class="title-group">
+        <h1>📊 관리자 대시보드</h1>
+        <p class="subtitle">상담사 스트레스 모니터링 & AI 자동화 성과 분석</p>
+      </div>
+      <div class="header-metrics">
+        <div class="header-metric">
+          <span class="metric-label">오늘 통화</span>
+          <span class="metric-value">1,234건</span>
+        </div>
+        <div class="header-metric">
+          <span class="metric-label">적대적 콜</span>
+          <span class="metric-value" style="color: #b8323c;">45건</span>
+        </div>
+        <div class="header-metric">
+          <span class="metric-label">AI 채택률</span>
+          <span class="metric-value" style="color: #2f855a;">87%</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="dashboard">
+      <section class="column left-column">
+        <article class="card stress-monitoring-card">
+          <div class="card-header">
+            <h2>상담사 스트레스 및 성과 모니터링</h2>
+            <span class="badge badge-info">실시간</span>
+          </div>
+          <div class="agent-list">
+            <div class="agent-item">
+              <div class="agent-info">
+                <strong>김상담</strong>
+                <span class="badge badge-warning">주의</span>
+              </div>
+              <div class="agent-metrics">
+                <div class="metric-row">
+                  <span>적대적 콜 처리</span>
+                  <span class="metric-value">12건</span>
+                </div>
+                <div class="metric-row">
+                  <span>감정 노동 지수</span>
+                  <span class="metric-value" style="color: #b8323c;">85 / 100</span>
+                </div>
+                <div class="progress" style="margin-top: 8px;">
+                  <div class="progress-fill" style="width: 85%; background: linear-gradient(90deg, #ff7b5c, #ff6f61);"></div>
+                </div>
+              </div>
+              <div class="agent-action">
+                <button class="btn btn-outline" style="font-size: 0.85rem; padding: 8px 12px;">휴식 권고</button>
+              </div>
+            </div>
+            <div class="agent-item">
+              <div class="agent-info">
+                <strong>이상담</strong>
+                <span class="badge badge-success">안정</span>
+              </div>
+              <div class="agent-metrics">
+                <div class="metric-row">
+                  <span>적대적 콜 처리</span>
+                  <span class="metric-value">3건</span>
+                </div>
+                <div class="metric-row">
+                  <span>감정 노동 지수</span>
+                  <span class="metric-value" style="color: #2f855a;">42 / 100</span>
+                </div>
+                <div class="progress" style="margin-top: 8px;">
+                  <div class="progress-fill" style="width: 42%; background: linear-gradient(90deg, #9ae6b4, #81de9f);"></div>
+                </div>
+              </div>
+            </div>
+            <div class="agent-item">
+              <div class="agent-info">
+                <strong>박상담</strong>
+                <span class="badge badge-warning">주의</span>
+              </div>
+              <div class="agent-metrics">
+                <div class="metric-row">
+                  <span>적대적 콜 처리</span>
+                  <span class="metric-value">8건</span>
+                </div>
+                <div class="metric-row">
+                  <span>감정 노동 지수</span>
+                  <span class="metric-value" style="color: #c66a17;">68 / 100</span>
+                </div>
+                <div class="progress" style="margin-top: 8px;">
+                  <div class="progress-fill" style="width: 68%; background: linear-gradient(90deg, #ffd27f, #ffc85a);"></div>
+                </div>
+              </div>
+              <div class="agent-action">
+                <button class="btn btn-outline" style="font-size: 0.85rem; padding: 8px 12px;">모니터링</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card performance-card">
+          <div class="card-header">
+            <h2>상담사별 성과</h2>
+            <span class="badge badge-neutral">통계</span>
+          </div>
+          <div class="performance-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>상담사</th>
+                  <th>통화 수</th>
+                  <th>평균 처리 시간</th>
+                  <th>고객 만족도</th>
+                  <th>AI 채택률</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>김상담</td>
+                  <td>156건</td>
+                  <td>4분 32초</td>
+                  <td>4.2 / 5.0</td>
+                  <td>92%</td>
+                </tr>
+                <tr>
+                  <td>이상담</td>
+                  <td>142건</td>
+                  <td>3분 45초</td>
+                  <td>4.5 / 5.0</td>
+                  <td>88%</td>
+                </tr>
+                <tr>
+                  <td>박상담</td>
+                  <td>138건</td>
+                  <td>5분 12초</td>
+                  <td>4.0 / 5.0</td>
+                  <td>85%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section class="column right-column">
+        <article class="card ai-performance-card">
+          <div class="card-header">
+            <h2>AI 자동화 성과 분석</h2>
+            <span class="badge badge-success">리포트</span>
+          </div>
+          <div class="ai-metrics">
+            <div class="ai-metric-item">
+              <div class="ai-metric-header">
+                <span>AI 솔루션 채택률</span>
+                <span class="metric-value" style="color: #2f855a;">87%</span>
+              </div>
+              <div class="progress">
+                <div class="progress-fill" style="width: 87%; background: linear-gradient(90deg, #9ae6b4, #81de9f);"></div>
+              </div>
+              <p class="metric-desc">상담사가 AI 추천 솔루션을 실제로 사용한 비율</p>
+            </div>
+            <div class="ai-metric-item">
+              <div class="ai-metric-header">
+                <span>AI 정확도</span>
+                <span class="metric-value" style="color: #2f855a;">92%</span>
+              </div>
+              <div class="progress">
+                <div class="progress-fill" style="width: 92%; background: linear-gradient(90deg, #9ae6b4, #81de9f);"></div>
+              </div>
+              <p class="metric-desc">AI가 추천한 솔루션의 적절성 평가</p>
+            </div>
+            <div class="ai-metric-item">
+              <div class="ai-metric-header">
+                <span>대체된 단순 업무</span>
+                <span class="metric-value">234건</span>
+              </div>
+              <p class="metric-desc">AI가 자동으로 처리한 반복/단순 업무 건수</p>
+            </div>
+            <div class="ai-metric-item">
+              <div class="ai-metric-header">
+                <span>시간 절감</span>
+                <span class="metric-value" style="color: #2f855a;">18.5시간</span>
+              </div>
+              <p class="metric-desc">AI 자동화로 절감된 상담사 업무 시간</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="card hostile-call-card">
+          <div class="card-header">
+            <h2>적대적 콜 통계</h2>
+            <span class="badge badge-danger">모니터링</span>
+          </div>
+          <div class="hostile-stats">
+            <div class="stat-item">
+              <div class="stat-label">오늘 적대적 콜</div>
+              <div class="stat-value" style="color: #b8323c;">45건</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">평균 감정 노동 지수</div>
+              <div class="stat-value" style="color: #c66a17;">72 / 100</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">휴식 권고 필요</div>
+              <div class="stat-value" style="color: #b8323c;">8명</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">인센티브 대상</div>
+              <div class="stat-value" style="color: #2f855a;">12명</div>
+            </div>
+          </div>
+          <div class="hostile-breakdown">
+            <h3>적대적 콜 유형</h3>
+            <div class="breakdown-list">
+              <div class="breakdown-item">
+                <span>폭언</span>
+                <span class="badge badge-danger">18건</span>
+              </div>
+              <div class="breakdown-item">
+                <span>장시간 불만</span>
+                <span class="badge badge-warning">15건</span>
+              </div>
+              <div class="breakdown-item">
+                <span>고성</span>
+                <span class="badge badge-warning">12건</span>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <footer class="page-footer">
+      CallCenter AI Demo v0.1.0 · 관리자 대시보드
+    </footer>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
+
