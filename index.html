@@ -84,68 +84,33 @@
             <h2>AI 솔루션 자동 추천</h2>
             <span class="badge badge-info">AI Copilot</span>
           </div>
-          <div class="solution-tabs">
-            <button class="tab-btn active" data-tab="manual">대응 매뉴얼</button>
-            <button class="tab-btn" data-tab="questions">예상 질문</button>
-            <button class="tab-btn" data-tab="script">추천 스크립트</button>
-          </div>
           <div class="solution-content">
-            <div id="manual-content" class="tab-content active">
+            <!-- 1. 고객 의도 키워드 (최상단) -->
+            <div class="keyword-section" style="margin-bottom: 20px;">
+              <h3 style="font-size: 0.9rem; opacity: 0.75; margin-bottom: 10px;">고객 의도 키워드</h3>
+              <div id="keyword-list" class="keyword-list">
+                <span class="placeholder">아직 키워드가 없습니다.</span>
+              </div>
+            </div>
+            
+            <!-- 2. 추천 스크립트 (중간) -->
+            <div class="script-section" style="margin-bottom: 20px;">
+              <h3 style="font-size: 0.9rem; opacity: 0.75; margin-bottom: 10px;">추천 스크립트</h3>
+              <div id="script-content">
+                <div class="placeholder">추천 스크립트가 표시됩니다.</div>
+              </div>
+            </div>
+            
+            <!-- 3. 대응 매뉴얼 (하단) -->
+            <div class="manual-section">
+              <h3 style="font-size: 0.9rem; opacity: 0.75; margin-bottom: 10px;">대응 매뉴얼</h3>
               <ul id="manual-list" class="solution-list">
                 <li class="placeholder">고객 의도에 맞는 대응 매뉴얼이 표시됩니다.</li>
               </ul>
             </div>
-            <div id="questions-content" class="tab-content">
-              <ul id="questions-list" class="solution-list">
-                <li class="placeholder">예상 질문이 표시됩니다.</li>
-              </ul>
-            </div>
-            <div id="script-content" class="tab-content">
-              <ul id="script-list" class="solution-list">
-                <li class="placeholder">추천 스크립트가 표시됩니다.</li>
-              </ul>
-            </div>
           </div>
         </article>
 
-        <article class="card search-card">
-          <div class="card-header">
-            <h2>AI 지식 검색</h2>
-            <span class="badge badge-info">검색</span>
-          </div>
-          <div class="search-box">
-            <input type="text" id="knowledge-search" placeholder="검색어를 입력하세요..." class="search-input">
-            <button id="search-btn" class="btn btn-primary">검색</button>
-          </div>
-          <div id="search-results" class="search-results">
-            <p class="placeholder">검색 결과가 여기에 표시됩니다.</p>
-          </div>
-        </article>
-
-        <article class="card agent-card">
-          <div class="card-header">
-            <h2>상담원 보호</h2>
-            <span id="agent-state-label" class="badge badge-neutral">대기 중</span>
-          </div>
-          <div class="agent-body">
-            <div class="agent-metric">
-              <div class="agent-metric-header">
-                <span>스트레스 지수</span>
-                <span id="stress-value">--</span>
-              </div>
-              <div class="progress">
-                <div id="stress-bar" class="progress-fill"></div>
-              </div>
-            </div>
-            <div class="agent-metric">
-              <div class="agent-metric-header">
-                <span>연속 악성 통화</span>
-                <span id="escalation-count">0건</span>
-              </div>
-            </div>
-            <div class="agent-alert" id="agent-hint">데모를 시작하면 보호 시나리오가 활성화됩니다.</div>
-          </div>
-        </article>
       </section>
     </main>
 

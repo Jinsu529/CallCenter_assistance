@@ -9,11 +9,6 @@
     latencyBadge: document.getElementById('stt-latency'),
     suggestionList: document.getElementById('suggestion-list'),
     keywordList: document.getElementById('keyword-list'),
-    agentStateLabel: document.getElementById('agent-state-label'),
-    stressBar: document.getElementById('stress-bar'),
-    stressValue: document.getElementById('stress-value'),
-    escalationCount: document.getElementById('escalation-count'),
-    agentHint: document.getElementById('agent-hint'),
     assistantBubble: document.querySelector('.assistant-bubble')
   };
 
@@ -24,6 +19,13 @@
   // --- (신규) WebSocket ---
   let ws = null;
   const WEBSOCKET_URL = "ws://localhost:8766"; // Python 서버 주소 (포트 수정)
+
+  // --- (신규) 화자 분석(Diarization) 상태 관리 ---
+  let speakerMap = {}; // API의 숫자 ID(예: 1, 2)를 실제 태그(예: '상담원', '고객')와 매핑
+  let isSpeakerMapConfirmed = false; // 화자 2명이 모두 확인되었는지 여부
+  let messageCounter = 0; // DOM ID 부여용 카운터
+  let messageDataMap = {}; // 메시지 ID별 데이터 저장: {messageId: {speakerId, text, timestamp}}
+  let conversation_history = []; // 대화 로그 (서버와 동기화)
 
   function generateCallId() {
     const prefix = ['R', 'T', 'W'][Math.floor(Math.random() * 3)];
@@ -57,7 +59,6 @@
     ws.onopen = () => {
       console.log("[WebSocket] 서버에 연결되었습니다.");
       if (elements.callState) elements.callState.textContent = '통화 중';
-      if (elements.agentHint) elements.agentHint.textContent = "백엔드 AI 서버에 연결되었습니다. 마이크에 말씀하세요.";
       startDemo();
     };
 
@@ -67,10 +68,27 @@
         console.log("[WebSocket] 메시지 수신:", msg);
 
         // 수신된 메시지 유형에 따라 UI 업데이트
-        if (msg.type === 'stt') {
-          applySTT(msg.data);
-        } else if (msg.type === 'analysis') {
-          applyAnalysis(msg.data);
+        switch (msg.type) {
+          // ----------------------------------------------------
+          // [STT/화자분석] VAD가 확정한 말풍선 즉시 표시
+          // ----------------------------------------------------
+          case "stt_final":
+            handleSTTFinal(msg);
+            break;
+          
+          // ----------------------------------------------------
+          // [AI 분석] 백그라운드 분석 결과 비동기 업데이트
+          // ----------------------------------------------------
+          case "analysis_result":
+            handleAnalysisResult(msg);
+            break;
+          
+          // ----------------------------------------------------
+          // [STT 중간] (선택 사항) 타이핑 효과
+          // ----------------------------------------------------
+          case "stt_partial":
+            handleSTTPartial(msg);
+            break;
         }
       } catch (e) {
         console.error("[WebSocket] 잘못된 JSON 수신:", event.data);
@@ -82,14 +100,12 @@
       if (demoRunning) {
         stopDemo(false); // 재연결 시도 없이 중지
         if (elements.callState) elements.callState.textContent = '연결 끊김';
-        if (elements.agentHint) elements.agentHint.textContent = "백엔드 서버와 연결이 끊겼습니다. 서버를 확인하세요.";
       }
     };
 
     ws.onerror = (err) => {
       console.error("[WebSocket] 오류:", err);
       if (elements.callState) elements.callState.textContent = '연결 오류';
-      if (elements.agentHint) elements.agentHint.textContent = "백엔드 서버에 연결할 수 없습니다. (Python 서버 실행 확인)";
       stopDemo(false);
     };
   }
@@ -101,55 +117,202 @@
       }
   }
 
-  // --- (신규) UI 업데이트 함수 분리 ---
-  function applySTT(data) {
-    appendTranscript(data); // data: { speaker, text, latency }
-    updateLatency(data.latency);
-  }
-
-  function applyAnalysis(data) {
-    // data: { suggestions, expected_questions, recommended_scripts, keywords, relevant_manuals, ... }
-    updateManualSuggestions(data.suggestions || []);
-    updateExpectedQuestions(data.expected_questions || []);
-    updateRecommendedScripts(data.recommended_scripts || []);
-    updateKeywords(data.keywords || []);
-    updateAgentState(data); // agentStress, agentState, escalations, alert 포함
+  // --- (신규) UI 업데이트 함수 분리 (이벤트 기반) ---
+  // stt_final: 최종 문장 확정 시 즉시 말풍선 표시
+  function handleSTTFinal(msg) {
+    // msg: { type: "stt_final", text: "...", speakerId: 1, latency: 123 }
+    const messageId = `msg-${messageCounter++}`;
+    const speakerId = msg.speakerId;
+    const text = msg.text;
+    const latency = msg.latency || 0;
     
-    // 비서 말풍선 업데이트
-    if(elements.assistantBubble) {
-        const firstSuggestion = data.suggestions && data.suggestions[0];
-        const suggestionText = firstSuggestion ? `${firstSuggestion.title}: ${firstSuggestion.step}` : "고객의 말을 경청하세요.";
-        elements.assistantBubble.innerHTML = `고객 의도를 분석하여 최적의 솔루션을 추천합니다.<br>${suggestionText}`;
+    // 메시지 데이터 저장
+    messageDataMap[messageId] = {
+      speakerId: speakerId,
+      text: text,
+      timestamp: Date.now()
+    };
+    
+    // Phase 1: 태그 없는 말풍선 우선 렌더링
+    renderBubble(messageId, text, speakerId, null); // `tag`는 null로 전달
+    
+    if (!isSpeakerMapConfirmed) {
+      // Phase 1: 화자 매핑 시도
+      if (!speakerMap[speakerId]) {
+        if (Object.keys(speakerMap).length === 0) {
+          speakerMap[speakerId] = '상담원'; // 첫 화자를 '상담원'으로 가정
+          console.log(`[화자 분석] 첫 번째 화자 ID ${speakerId} → '상담원'으로 매핑`);
+        } else {
+          speakerMap[speakerId] = '고객';
+          console.log(`[화자 분석] 두 번째 화자 ID ${speakerId} → '고객'으로 매핑`);
+          
+          // Phase 2: 화자 2명 확인됨
+          isSpeakerMapConfirmed = true;
+          console.log('[화자 분석] 화자 2명 확인 완료. 모든 말풍선에 태그 적용 시작.');
+          
+          // Phase 3: 기존 모든 말풍선 재-렌더링(태그 업데이트)
+          updateAllBubbleTags(speakerMap);
+        }
+      }
     }
+    
+    // Phase 3: 이미 화자가 확정된 경우
+    if (isSpeakerMapConfirmed) {
+      const tag = speakerMap[speakerId];
+      updateBubbleTag(messageId, tag); // `tag`만 업데이트
+    }
+    
+    updateLatency(latency);
+    scrollToBottom();
   }
 
-  // --- 기존 UI 업데이트 함수 (변경 없음) ---
-  function appendTranscript(entry) {
+  // stt_partial: 중간 텍스트 (타이핑 효과)
+  function handleSTTPartial(msg) {
+    // msg: { type: "stt_partial", text: "..." }
+    const partialText = msg.text || '';
+    
+    // partial 말풍선이 없으면 생성
+    let partialBubble = elements.transcriptList.querySelector('.transcript-item.partial');
+    
+    if (!partialBubble) {
+      // placeholder 제거
+      if (elements.transcriptList.querySelector('.placeholder')) {
+        elements.transcriptList.innerHTML = '';
+      }
+      
+      // 새로운 partial 말풍선 생성
+      partialBubble = document.createElement('div');
+      partialBubble.className = 'transcript-item partial';
+      const content = document.createElement('p');
+      content.textContent = partialText;
+      partialBubble.appendChild(content);
+      elements.transcriptList.appendChild(partialBubble);
+    } else {
+      // 기존 partial 말풍선 업데이트
+      const content = partialBubble.querySelector('p');
+      if (content) {
+        content.textContent = partialText;
+      }
+    }
+    
+    scrollToBottom();
+  }
+
+  // analysis_result: AI 분석 결과 업데이트
+  function handleAnalysisResult(msg) {
+    // msg: { type: "analysis_result", emotion: {...}, rag: {...} }
+    const ragResults = msg.rag || {};
+    const emotionResult = msg.emotion || {};
+    
+    // RAG 결과를 AI 솔루션 창에 렌더링 (아코디언 방식)
+    updateSolutionCard(ragResults);
+    
+    // 감정 지표 UI 업데이트
+    updateEmotionUI(emotionResult);
+  }
+  
+  // 헬퍼 함수: 말풍선 렌더링
+  function renderBubble(messageId, text, speakerId, tag) {
     if (!elements.transcriptList) return;
+    
     if (elements.transcriptList.querySelector('.placeholder')) {
       elements.transcriptList.innerHTML = '';
     }
+    
     const item = document.createElement('div');
-    item.className = `transcript-item ${entry.speaker === '고객' ? 'customer' : 'agent'}`;
+    item.id = messageId;
+    item.className = 'transcript-item';
+    
+    // tag가 있으면 즉시 적용, 없으면 나중에 업데이트
+    if (tag) {
+      const speakerClass = tag === '고객' ? 'customer' : 'agent';
+      item.classList.add(speakerClass);
+      
     const meta = document.createElement('div');
     meta.className = 'transcript-meta';
-    const elapsed = elements.callTimer.textContent;
-    meta.textContent = `${entry.speaker} · ${elapsed}`;
+      const elapsed = elements.callTimer ? elements.callTimer.textContent : '00:00';
+      meta.textContent = `${tag} · ${elapsed}`;
+      item.appendChild(meta);
+    }
+    
     const content = document.createElement('p');
-    content.textContent = entry.text;
-    item.appendChild(meta);
+    content.textContent = text;
     item.appendChild(content);
+    
     elements.transcriptList.appendChild(item);
-    elements.transcriptList.scrollTop = elements.transcriptList.scrollHeight;
+  }
+  
+  // 헬퍼 함수: 말풍선 태그 업데이트
+  function updateBubbleTag(messageId, tag) {
+    const item = document.getElementById(messageId);
+    if (!item) return;
+    
+    const speakerClass = tag === '고객' ? 'customer' : 'agent';
+    item.classList.remove('customer', 'agent');
+    item.classList.add(speakerClass);
+    
+    // meta 태그 추가 또는 업데이트
+    let meta = item.querySelector('.transcript-meta');
+    if (!meta) {
+      meta = document.createElement('div');
+      meta.className = 'transcript-meta';
+      item.insertBefore(meta, item.firstChild);
+    }
+    
+    const elapsed = elements.callTimer ? elements.callTimer.textContent : '00:00';
+    meta.textContent = `${tag} · ${elapsed}`;
+  }
+  
+  // 헬퍼 함수: 모든 말풍선 태그 업데이트
+  function updateAllBubbleTags(speakerMap) {
+    Object.keys(messageDataMap).forEach(messageId => {
+      const data = messageDataMap[messageId];
+      const speakerId = data.speakerId;
+      
+      if (speakerMap[speakerId]) {
+        const tag = speakerMap[speakerId];
+        updateBubbleTag(messageId, tag);
+      }
+    });
+  }
+  
+  // 헬퍼 함수: 스크롤 맨 아래로
+  function scrollToBottom() {
+    setTimeout(() => {
+      if (elements.transcriptList) {
+        elements.transcriptList.scrollTop = elements.transcriptList.scrollHeight;
+      }
+    }, 10);
+  }
+  
+  // 헬퍼 함수: AI 솔루션 카드 업데이트 (순서: 키워드 → 스크립트 → 매뉴얼)
+  function updateSolutionCard(ragResults) {
+    // 1. 키워드 (최상단)
+    updateKeywords(ragResults.keywords || []);
+    
+    // 2. 추천 스크립트 (중간)
+    updateRecommendedScript(ragResults.recommended_script || '');
+    
+    // 3. 대응 매뉴얼 (하단)
+    updateManualSuggestions(ragResults.relevant_manuals || []);
+  }
+  
+  // 헬퍼 함수: 감정 UI 업데이트
+  function updateEmotionUI(emotionResult) {
+    if (Object.keys(emotionResult).length > 0) {
+      console.log("[감정 분석]", emotionResult);
+      // 감정 지표 업데이트 로직 추가 가능
+    }
   }
 
 
-  function updateManualSuggestions(suggestions) {
+
+  function updateManualSuggestions(manuals) {
     const manualList = document.getElementById('manual-list');
     if (!manualList) return;
     
     manualList.innerHTML = '';
-    if (!suggestions || suggestions.length === 0) {
+    if (!manuals || manuals.length === 0) {
       const li = document.createElement('li');
       li.className = 'placeholder';
       li.textContent = '고객 의도에 맞는 대응 매뉴얼이 표시됩니다.';
@@ -157,91 +320,100 @@
       return;
     }
     
-    suggestions.forEach((suggestion, idx) => {
+    // 매뉴얼을 아코디언 형태로 표시 (최대 3개)
+    const displayManuals = manuals.slice(0, 3);
+    displayManuals.forEach((manual, idx) => {
       const li = document.createElement('li');
-      li.className = 'solution-item';
-      li.innerHTML = `
-        <strong>${suggestion.title || '매뉴얼'}</strong>
-        <span style="display: block; margin-top: 6px; font-weight: 600; color: #c75d2c;">${suggestion.step || ''}</span>
-        <span style="display: block; margin-top: 8px; white-space: pre-line;">${suggestion.content || ''}</span>
+      li.className = 'solution-item manual-accordion';
+      
+      // 아코디언 헤더
+      const header = document.createElement('div');
+      header.className = 'manual-accordion-header';
+      header.innerHTML = `
+        <strong>${manual.title || '매뉴얼'}</strong>
+        <span class="manual-accordion-toggle">▼</span>
       `;
+      
+      // 아코디언 내용 (steps 표시)
+      const content = document.createElement('div');
+      content.className = 'manual-accordion-content';
+      content.style.display = 'none';
+      
+      let stepsHtml = '';
+      if (manual.steps && Array.isArray(manual.steps)) {
+        manual.steps.forEach((step, stepIdx) => {
+          stepsHtml += `
+            <div style="margin-top: ${stepIdx > 0 ? '16px' : '8px'};">
+              <div style="font-weight: 600; color: #c75d2c; margin-bottom: 6px;">${step.title || ''}</div>
+              <div style="white-space: pre-line; line-height: 1.6;">${step.content || ''}</div>
+            </div>
+          `;
+        });
+      }
+      content.innerHTML = stepsHtml;
+      
+      // 클릭 이벤트: 아코디언 토글
+      header.addEventListener('click', () => {
+        const isOpen = content.style.display !== 'none';
+        content.style.display = isOpen ? 'none' : 'block';
+        const toggle = header.querySelector('.manual-accordion-toggle');
+        toggle.textContent = isOpen ? '▼' : '▲';
+      });
+      
+      li.appendChild(header);
+      li.appendChild(content);
       manualList.appendChild(li);
     });
+    
+    // 비서 말풍선 업데이트
+    if (elements.assistantBubble && displayManuals.length > 0) {
+      const firstManual = displayManuals[0];
+      const suggestionText = firstManual.title || '대응 매뉴얼';
+      elements.assistantBubble.innerHTML = `고객 의도를 분석하여 최적의 솔루션을 추천합니다.<br>${suggestionText}`;
+    }
   }
 
-  function updateExpectedQuestions(questions) {
-    const questionsList = document.getElementById('questions-list');
-    if (!questionsList) return;
+  function updateRecommendedScript(script) {
+    const scriptContent = document.getElementById('script-content');
+    if (!scriptContent) return;
     
-    questionsList.innerHTML = '';
-    if (!questions || questions.length === 0) {
-      const li = document.createElement('li');
-      li.className = 'placeholder';
-      li.textContent = '예상 질문이 표시됩니다.';
-      questionsList.appendChild(li);
+    scriptContent.innerHTML = '';
+    if (!script || script.trim() === '') {
+      const placeholder = document.createElement('div');
+      placeholder.className = 'placeholder';
+      placeholder.textContent = '추천 스크립트가 표시됩니다.';
+      scriptContent.appendChild(placeholder);
       return;
     }
     
-    questions.forEach((question, idx) => {
-      const li = document.createElement('li');
-      li.className = 'solution-item';
-      li.innerHTML = `<span>${question}</span>`;
-      questionsList.appendChild(li);
-    });
-  }
-
-  function updateRecommendedScripts(scripts) {
-    const scriptList = document.getElementById('script-list');
-    if (!scriptList) return;
-    
-    scriptList.innerHTML = '';
-    if (!scripts || scripts.length === 0) {
-      const li = document.createElement('li');
-      li.className = 'placeholder';
-      li.textContent = '추천 스크립트가 표시됩니다.';
-      scriptList.appendChild(li);
-      return;
-    }
-    
-    scripts.forEach((script, idx) => {
-      const li = document.createElement('li');
-      li.className = 'solution-item';
-      li.innerHTML = `<span style="white-space: pre-line;">${script}</span>`;
-      scriptList.appendChild(li);
-    });
+    const scriptDiv = document.createElement('div');
+    scriptDiv.className = 'solution-item';
+    scriptDiv.style.whiteSpace = 'pre-line';
+    scriptDiv.style.lineHeight = '1.6';
+    scriptDiv.textContent = script;
+    scriptContent.appendChild(scriptDiv);
   }
 
   function updateKeywords(keywords) {
-    if (!elements.keywordList) return;
-    elements.keywordList.innerHTML = '';
+    const keywordList = document.getElementById('keyword-list');
+    if (!keywordList) return;
+    
+    keywordList.innerHTML = '';
     if (!keywords || keywords.length === 0) {
       const span = document.createElement('span');
       span.className = 'placeholder';
-      span.textContent = '표시할 키워드가 없습니다.';
-      elements.keywordList.appendChild(span);
+      span.textContent = '아직 키워드가 없습니다.';
+      keywordList.appendChild(span);
       return;
     }
     keywords.forEach((keyword) => {
       const chip = document.createElement('span');
       chip.className = 'keyword-chip';
       chip.textContent = keyword;
-      elements.keywordList.appendChild(chip);
+      keywordList.appendChild(chip);
     });
   }
 
-  function updateAgentState(entry) {
-    if (elements.agentStateLabel && entry.agentState) {
-        setBadgeClass(elements.agentStateLabel, entry.agentState.badge);
-        elements.agentStateLabel.textContent = entry.agentState.text;
-    }
-    if(elements.stressBar) {
-        const stressPercent = Math.round(entry.agentStress * 100);
-        elements.stressBar.style.width = `${stressPercent}%`;
-        elements.stressValue.textContent = `${stressPercent} / 100`;
-    }
-    if(elements.escalationCount) elements.escalationCount.textContent = `${entry.escalations}건`;
-    if(elements.agentHint) elements.agentHint.textContent = entry.alert;
-  }
 
   function updateLatency(latency) {
     if (!elements.latencyBadge) return;
@@ -274,15 +446,16 @@
     if (elements.callTimer) elements.callTimer.textContent = '00:00';
     resetBadge(elements.latencyBadge);
     if (elements.latencyBadge) elements.latencyBadge.textContent = 'Latency -- ms';
-    resetBadge(elements.agentStateLabel);
-    if (elements.agentStateLabel) elements.agentStateLabel.textContent = '대기 중';
-    if (elements.stressBar) elements.stressBar.style.width = '0%';
-    if (elements.stressValue) elements.stressValue.textContent = '--';
-    if (elements.escalationCount) elements.escalationCount.textContent = '0건';
-    if (elements.agentHint) elements.agentHint.textContent = '데모를 시작하려면 ▶ 버튼을 눌러주세요.';
-    if (elements.suggestionList) elements.suggestionList.innerHTML = '<li class="placeholder">고객 의도가 인식되면 솔루션이 안내됩니다.</li>';
-    if (elements.keywordList) elements.keywordList.innerHTML = '<span class="placeholder">아직 키워드가 없습니다.</span>';
+    const keywordList = document.getElementById('keyword-list');
+    if (keywordList) keywordList.innerHTML = '<span class="placeholder">아직 키워드가 없습니다.</span>';
     if (elements.assistantBubble) elements.assistantBubble.innerHTML = "고객 의도를 분석하여 최적의 솔루션을 추천합니다.<br>제시된 대응 매뉴얼을 선택하여 즉시 활용하세요.";
+    
+    // 화자 분석 상태 초기화
+    speakerMap = {};
+    isSpeakerMapConfirmed = false;
+    messageCounter = 0;
+    messageDataMap = {};
+    conversation_history = [];
     
     resetTranscript();
   }
@@ -305,7 +478,7 @@
     connectWebSocket(); 
   }
 
-  // (수정) WebSocket 연결 종료
+  // (수정) WebSocket 연결 종료 및 debriefing.html로 이동
   function stopDemo(manual = true) {
     if (!demoRunning && manual) return; // 이미 중지됨
     
@@ -314,12 +487,74 @@
     
     if (manual) {
         disconnectWebSocket();
-        if(elements.callState) elements.callState.textContent = '데모 중지';
-        if(elements.agentHint) elements.agentHint.textContent = '데모가 중단되었습니다. 다시 시작하려면 ▶ 버튼을 눌러주세요.';
+        
+        // 데모 데이터 수집
+        const demoData = collectDemoData();
+        
+        // conversation_history를 텍스트로 변환하여 서버에 요약 요청
+        const historyText = conversation_history.map(item => 
+          `화자${item.speakerId === 1 ? '상담원' : '고객'}: ${item.text}`
+        ).join('\n');
+        
+        // 서버에 요약 요청 (WebSocket을 통해 또는 별도 API 호출)
+        // 현재는 localStorage에 저장하고 debriefing.html에서 처리
+        // TODO: 서버에 요약 요청하는 로직 추가 필요
+        
+        // localStorage에 데이터 저장
+        localStorage.setItem('callCenterDemoData', JSON.stringify(demoData));
+        localStorage.setItem('conversationHistoryText', historyText);
+        
+        // debriefing.html로 이동
+        window.location.href = 'debriefing.html';
     }
 
     if(elements.startBtn) elements.startBtn.disabled = false;
     if(elements.stopBtn) elements.stopBtn.disabled = true;
+  }
+
+  // 데모 데이터 수집 함수
+  function collectDemoData() {
+    const transcriptItems = elements.transcriptList ? Array.from(elements.transcriptList.querySelectorAll('.transcript-item')) : [];
+    const transcript = transcriptItems.map(item => {
+      const meta = item.querySelector('.transcript-meta')?.textContent || '';
+      const text = item.querySelector('p')?.textContent || '';
+      const speaker = meta.includes('고객') ? 'customer' : 'agent';
+      return { speaker, text, meta };
+    });
+
+    // 감정 분석 데이터 (간단한 예시)
+    const emotionData = {
+      difficulty: calculateCallDifficulty(transcript),
+      stressLevel: 0, // 상담원 보호 카드 삭제로 인해 기본값 사용
+      escalations: 0 // 상담원 보호 카드 삭제로 인해 기본값 사용
+    };
+
+    return {
+      callId: elements.callId ? elements.callId.textContent : 'A-0000',
+      duration: elements.callTimer ? elements.callTimer.textContent : '00:00',
+      transcript: transcript,
+      emotion: emotionData,
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  // 콜 난이도 계산 (간단한 예시)
+  function calculateCallDifficulty(transcript) {
+    let difficulty = 1; // 기본 1단계
+    const allText = transcript.map(t => t.text).join(' ').toLowerCase();
+    
+    // 키워드 기반 난이도 계산
+    if (allText.includes('불만') || allText.includes('화나') || allText.includes('짜증')) {
+      difficulty = 3;
+    }
+    if (allText.includes('환불') || allText.includes('보상') || allText.includes('불만')) {
+      difficulty = Math.max(difficulty, 4);
+    }
+    if (allText.includes('폭언') || allText.includes('욕설') || allText.includes('고성')) {
+      difficulty = 5;
+    }
+    
+    return difficulty;
   }
 
 
@@ -484,16 +719,16 @@
   function initSolutionDemo() {
     // 실제 데이터는 WebSocket을 통해 받아오므로 초기화만 수행
     const manualList = document.getElementById('manual-list');
-    const questionsList = document.getElementById('questions-list');
-    const scriptList = document.getElementById('script-list');
+    const scriptContent = document.getElementById('script-content');
+    const keywordList = document.getElementById('keyword-list');
 
     if (manualList && manualList.querySelector('.placeholder')) {
       // 이미 placeholder가 있으면 그대로 유지
     }
-    if (questionsList && questionsList.querySelector('.placeholder')) {
+    if (scriptContent && scriptContent.querySelector('.placeholder')) {
       // 이미 placeholder가 있으면 그대로 유지
     }
-    if (scriptList && scriptList.querySelector('.placeholder')) {
+    if (keywordList && keywordList.querySelector('.placeholder')) {
       // 이미 placeholder가 있으면 그대로 유지
     }
   }
@@ -505,7 +740,6 @@
     if(elements.stopBtn) elements.stopBtn.addEventListener('click', stopDemo);
     
     // 신규 기능 초기화
-    initTabs();
     initSearch();
     initManualSearch();
     highlightIntent();

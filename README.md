@@ -303,13 +303,16 @@ python server.py
 - **asyncio**: 비동기 처리
 - **websockets**: WebSocket 서버
 - **sounddevice**: 마이크 입력
-- **webrtcvad**: 음성 활동 감지
+- **webrtcvad**: 음성 활동 감지 (VAD)
 - **pydub**: 오디오 변환
 - **numpy**: 수치 연산
+- **threading**: 스트리밍 처리
 
 ### AI/ML
+- **Naver Clova STT API**: 
+  - 실시간 스트리밍 STT (200ms 간격)
+  - Partial/Final 결과 반환
 - **Google Gemini API**: 
-  - STT (Speech-to-Text)
   - 감정 분석
   - 텍스트 생성 (코칭)
 - **ChromaDB**: 벡터 데이터베이스 (RAG)
@@ -318,50 +321,54 @@ python server.py
 
 ## 📊 데이터 흐름 상세
 
-### 1부: 실시간 STT 스트리밍
+### 1부: 실시간 스트리밍 STT
 
 1. **마이크 입력** (`server.py`)
-   - `sounddevice`가 100ms 단위로 오디오 청크 캡처
+   - `sounddevice`가 30ms 단위로 오디오 프레임 캡처
    - `audio_queue`로 전송
 
-2. **VAD 처리**
+2. **VAD 처리 (음성 시작 감지)**
    - `webrtcvad`로 음성/침묵 구분
-   - 음성 구간 감지 시 버퍼링
-   - 800ms 침묵 감지 시 구간 확정
+   - **음성 시작 감지 시 즉시 STT 스트리밍 세션 시작**
+   - 오디오를 200ms 단위로 스트리밍 세션에 전송
 
-3. **STT 변환**
-   - 음성 구간 → WAV 변환
-   - Gemini API 호출
-   - 텍스트 추출
+3. **실시간 STT 스트리밍**
+   - `StreamingSTTClient`가 200ms 간격으로 누적 오디오를 STT API에 전송
+   - **Partial 결과 (중간 텍스트)**: 실시간으로 UI에 타이핑 효과로 표시
+   - **Final 결과 (최종 텍스트)**: 800ms 침묵 감지 시 최종 결과 확정
 
 4. **WebSocket 전송**
-   - `{"type": "stt", "data": {...}}` 메시지 전송
-   - 프론트엔드에서 전사 목록 업데이트
+   - `{"type": "stt_partial", "text": "..."}` - 중간 결과 (타이핑 효과)
+   - `{"type": "stt_final", "text": "...", "speakerId": 1, "latency": 123}` - 최종 결과
+   - 프론트엔드에서 실시간으로 말풍선 업데이트
 
-### 2부: Gemini 심층 분석
+### 2부: Gemini 심층 분석 (Final 결과 후)
 
-1. **감정 분석**
-   - STT 텍스트 → Gemini API
-   - 5가지 감정 점수 반환
+1. **감정 분석** (Task A)
+   - STT Final 텍스트 → Gemini API
+   - 5가지 감정 점수 반환 (anger, frustration, sadness, neutral, joy)
 
-2. **RAG 코칭**
+2. **RAG 코칭** (Task B)
    - 대화 맥락 + 감정 → ChromaDB 검색
    - 관련 CS 매뉴얼 문서 검색
    - Gemini API로 코칭 제안 생성
 
-3. **결과 통합**
+3. **병렬 처리 및 결과 통합**
+   - Task A와 Task B를 병렬로 실행
    - 감정, 추천, 키워드, 위험도, 상담원 상태 통합
-   - `{"type": "analysis", "data": {...}}` 메시지 전송
+   - `{"type": "analysis_result", "emotion": {...}, "rag": {...}}` 메시지 전송
    - 프론트엔드 대시보드 업데이트
 
 ---
 
 ## 🎯 주요 기능
 
-### 실시간 음성 인식
-- 마이크 입력 실시간 캡처
-- VAD 기반 음성 구간 감지
-- Google Gemini STT로 텍스트 변환
+### 실시간 스트리밍 음성 인식
+- 마이크 입력 실시간 캡처 (30ms 프레임)
+- VAD 기반 음성 시작 즉시 감지
+- Naver Clova STT 스트리밍으로 실시간 텍스트 변환
+- Partial 결과 (중간 텍스트)를 타이핑 효과로 즉시 표시
+- Final 결과 (최종 텍스트)는 침묵 감지 시 확정
 
 ### 감정 분석
 - 5가지 감정 분류 (분노, 불만, 슬픔, 중립, 긍정)
@@ -397,7 +404,7 @@ python server.py
 프로젝트 개선 제안 및 버그 리포트는 언제든 환영합니다.
 
 ---
-`
-**버전**: v0.1.1  
-**최종 업데이트**: 2025-11-08 / 22:55
+
+**버전**: v0.1.0  
+**최종 업데이트**: 2024
 

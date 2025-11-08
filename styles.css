@@ -256,17 +256,33 @@ body {
   color: rgba(63, 42, 32, 0.65);
 }
 
+/* transcript-card 고정 높이 */
+.transcript-card {
+  display: flex;
+  flex-direction: column;
+  height: 500px; /* 고정 높이 */
+}
+
+.transcript-card .card-header {
+  flex-shrink: 0;
+}
+
+.transcript-card .intent-section {
+  flex-shrink: 0;
+  margin-top: 16px;
+}
+
 .transcript-list {
   background: rgba(255, 242, 226, 0.9);
   border-radius: 16px;
   border: 1px solid rgba(229, 170, 116, 0.35);
   padding: 18px;
-  min-height: 260px;
-  max-height: 360px;
+  flex: 1;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  min-height: 0; /* flexbox에서 스크롤이 작동하도록 */
 }
 
 .transcript-list::-webkit-scrollbar {
@@ -295,6 +311,12 @@ body {
 .transcript-item.agent {
   background: rgba(193, 230, 200, 0.35);
   border: 1px solid rgba(129, 190, 150, 0.35);
+}
+
+.transcript-item.partial {
+  background: rgba(255, 242, 226, 0.6);
+  border: 1px dashed rgba(229, 170, 116, 0.5);
+  opacity: 0.8;
 }
 
 .transcript-meta {
@@ -347,22 +369,61 @@ body {
 .suggestion-item {
   background: rgba(255, 235, 210, 0.8);
   border: 1px solid rgba(233, 170, 116, 0.4);
-  border-radius: 16px;
-  padding: 16px;
-  line-height: 1.6;
+}
+
+/* 매뉴얼 아코디언 */
+.manual-accordion {
+  background: rgba(255, 235, 210, 0.8);
+  border: 1px solid rgba(233, 170, 116, 0.4);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.manual-accordion-header {
+  padding: 14px 16px;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.manual-accordion-header:hover {
+  background: rgba(255, 221, 179, 0.5);
+}
+
+.manual-accordion-header strong {
+  color: #c75d2c;
+  font-size: 0.95rem;
+}
+
+.manual-accordion-toggle {
+  font-size: 0.8rem;
+  color: #c75d2c;
+  transition: transform 0.2s;
+}
+
+.manual-accordion-content {
+  padding: 0 16px 16px 16px;
+  border-top: 1px solid rgba(233, 170, 116, 0.3);
+  margin-top: 8px;
+  padding-top: 12px;
+  line-height: 1.6;
 }
 
 .suggestion-item strong {
   color: #c75d2c;
 }
 
-.keyword-section h3 {
+.keyword-section h3,
+.script-section h3,
+.manual-section h3 {
   font-size: 0.9rem;
   opacity: 0.75;
   margin-bottom: 10px;
+  color: #8a4d26;
+  font-weight: 600;
 }
 
 .keyword-list {
@@ -501,42 +562,23 @@ body {
   color: #b8323c;
 }
 
-/* 솔루션 탭 */
-.solution-tabs {
+/* 솔루션 섹션 */
+.solution-content {
   display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-  border-bottom: 2px solid rgba(233, 162, 107, 0.35);
+  flex-direction: column;
+  gap: 20px;
 }
 
-.tab-btn {
-  padding: 10px 18px;
-  border: none;
-  background: transparent;
-  color: #8a4d26;
-  font-weight: 600;
-  font-size: 0.9rem;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  transition: all 0.25s ease;
+.solution-section {
+  margin-bottom: 20px;
 }
 
-.tab-btn:hover {
-  color: #c75d2c;
+.script-section {
+  margin-bottom: 20px;
 }
 
-.tab-btn.active {
-  color: #c75d2c;
-  border-bottom-color: #ff9852;
-}
-
-.tab-content {
-  display: none;
-}
-
-.tab-content.active {
-  display: block;
+.manual-section {
+  margin-bottom: 20px;
 }
 
 .solution-list {
@@ -716,6 +758,16 @@ body {
   border-radius: 14px;
   font-size: 0.9rem;
   line-height: 1.5;
+}
+
+/* 난이도 시각화 */
+.difficulty-visualization {
+  margin-top: 12px;
+}
+
+.difficulty-bar {
+  display: flex;
+  gap: 8px;
 }
 
 /* 액션 리스트 */

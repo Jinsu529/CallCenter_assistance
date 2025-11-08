@@ -73,37 +73,36 @@
         <article class="card emotion-labor-card">
           <div class="card-header">
             <h2>감정 노동 수치화 리포트</h2>
-            <span class="badge badge-warning">적대적 콜</span>
+            <span class="badge badge-warning" id="difficulty-badge">난이도 분석 중</span>
           </div>
           <div class="labor-metrics">
             <div class="labor-metric">
               <div class="labor-metric-header">
-                <span>적대적 콜 태그</span>
+                <span>콜 난이도</span>
+                <span class="metric-value" id="difficulty-value">--</span>
               </div>
-              <div id="hostile-tags" class="tag-list">
-                <span class="tag tag-danger">폭언</span>
-                <span class="tag tag-warning">장시간 불만</span>
-                <span class="tag tag-info">고성</span>
+              <div id="difficulty-visualization" class="difficulty-visualization">
+                <!-- 5단계 난이도 시각화 -->
               </div>
             </div>
             <div class="labor-metric">
               <div class="labor-metric-header">
-                <span>감정 노동 지수</span>
-                <span class="metric-value">82 / 100</span>
+                <span>스트레스 지수</span>
+                <span class="metric-value" id="stress-value-debrief">--</span>
               </div>
               <div class="progress">
-                <div class="progress-fill" style="width: 82%"></div>
+                <div id="stress-bar-debrief" class="progress-fill" style="width: 0%"></div>
               </div>
             </div>
             <div class="labor-metric">
               <div class="labor-metric-header">
-                <span>통화 강도</span>
-                <span class="metric-value">높음</span>
+                <span>연속 악성 통화</span>
+                <span class="metric-value" id="escalation-count-debrief">0건</span>
               </div>
             </div>
           </div>
-          <div class="labor-note">
-            <p>이 통화는 적대적 콜로 분류되었습니다. 상담사 휴식 권고 및 후행적 보상이 필요합니다.</p>
+          <div class="labor-note" id="labor-note">
+            <p>콜 난이도 분석 결과가 여기에 표시됩니다.</p>
           </div>
         </article>
       </section>
@@ -146,30 +145,8 @@
           </div>
         </article>
 
-        <article class="card action-card">
-          <div class="card-header">
-            <h2>후처리 액션</h2>
-            <span class="badge badge-info">작업</span>
-          </div>
-          <div class="action-list">
-            <div class="action-item">
-              <input type="checkbox" id="action1" checked>
-              <label for="action1">배송 조치 완료</label>
-            </div>
-            <div class="action-item">
-              <input type="checkbox" id="action2" checked>
-              <label for="action2">배송비 환불 처리</label>
-            </div>
-            <div class="action-item">
-              <input type="checkbox" id="action3">
-              <label for="action3">고객 만족도 조사</label>
-            </div>
-            <div class="action-item">
-              <input type="checkbox" id="action4">
-              <label for="action4">관리자 보고</label>
-            </div>
-          </div>
-          <button class="btn btn-primary" style="margin-top: 16px;">후처리 완료</button>
+        <article class="card action-card" style="display: none;">
+          <!-- 후처리 액션 카드 숨김 -->
         </article>
       </section>
     </main>
@@ -178,6 +155,172 @@
       CallCenter AI Demo v0.1.0 · AI 상담 자동 요약 & 감정 노동 분석
     </footer>
   </div>
+  <script>
+    // debriefing.html 전용 스크립트
+    (() => {
+      // localStorage에서 데이터 로드
+      const demoDataStr = localStorage.getItem('callCenterDemoData');
+      const historyText = localStorage.getItem('conversationHistoryText');
+      
+      if (demoDataStr) {
+        const demoData = JSON.parse(demoDataStr);
+        
+        // 콜 ID 및 통화 시간 업데이트
+        const callIdEl = document.getElementById('call-id');
+        const callDurationEl = document.getElementById('call-duration');
+        if (callIdEl) callIdEl.textContent = demoData.callId || 'A-0000';
+        if (callDurationEl) callDurationEl.textContent = demoData.duration || '00:00';
+        
+        // 전체 대화 내용 표시
+        const fullTranscriptEl = document.getElementById('full-transcript');
+        if (fullTranscriptEl && demoData.transcript) {
+          fullTranscriptEl.innerHTML = '';
+          demoData.transcript.forEach(item => {
+            const transcriptItem = document.createElement('div');
+            transcriptItem.className = `transcript-item ${item.speaker === 'customer' ? 'customer' : 'agent'}`;
+            const meta = document.createElement('div');
+            meta.className = 'transcript-meta';
+            meta.textContent = item.meta || (item.speaker === 'customer' ? '고객' : '상담원');
+            const content = document.createElement('p');
+            content.textContent = item.text;
+            transcriptItem.appendChild(meta);
+            transcriptItem.appendChild(content);
+            fullTranscriptEl.appendChild(transcriptItem);
+          });
+        }
+        
+        // AI 상담 자동 요약 (서버에 요청)
+        if (historyText) {
+          fetch('http://localhost:8767/summarize', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ conversation_history: historyText })
+          })
+          .then(res => res.json())
+          .then(summary => {
+            const inquirySummaryEl = document.getElementById('inquiry-summary');
+            const resultSummaryEl = document.getElementById('result-summary');
+            if (inquirySummaryEl) {
+              inquirySummaryEl.querySelector('p').textContent = summary.inquiry_summary || '주요 문의 요약이 생성되지 않았습니다.';
+            }
+            if (resultSummaryEl) {
+              resultSummaryEl.querySelector('p').textContent = summary.result_summary || '처리 결과 요약이 생성되지 않았습니다.';
+            }
+          })
+          .catch(err => {
+            console.error('[요약 API 오류]', err);
+            // 폴백: 기본 텍스트 표시
+            const inquirySummaryEl = document.getElementById('inquiry-summary');
+            const resultSummaryEl = document.getElementById('result-summary');
+            if (inquirySummaryEl) {
+              inquirySummaryEl.querySelector('p').textContent = '요약 생성 중 오류가 발생했습니다.';
+            }
+            if (resultSummaryEl) {
+              resultSummaryEl.querySelector('p').textContent = '요약 생성 중 오류가 발생했습니다.';
+            }
+          });
+        }
+        
+        // 감정 리포트 업데이트
+        const difficulty = demoData.emotion?.difficulty || 1;
+        const difficultyValueEl = document.getElementById('difficulty-value');
+        const difficultyBadgeEl = document.getElementById('difficulty-badge');
+        const difficultyVisualEl = document.getElementById('difficulty-visualization');
+        const stressValueEl = document.getElementById('stress-value-debrief');
+        const stressBarEl = document.getElementById('stress-bar-debrief');
+        const escalationCountEl = document.getElementById('escalation-count-debrief');
+        const laborNoteEl = document.getElementById('labor-note');
+        
+        // 난이도 값 표시
+        if (difficultyValueEl) {
+          difficultyValueEl.textContent = `${difficulty} / 5`;
+        }
+        
+        // 난이도 배지 업데이트
+        if (difficultyBadgeEl) {
+          if (difficulty >= 4) {
+            difficultyBadgeEl.className = 'badge badge-danger';
+            difficultyBadgeEl.textContent = '매우 높음';
+          } else if (difficulty >= 3) {
+            difficultyBadgeEl.className = 'badge badge-warning';
+            difficultyBadgeEl.textContent = '높음';
+          } else {
+            difficultyBadgeEl.className = 'badge badge-info';
+            difficultyBadgeEl.textContent = '보통';
+          }
+        }
+        
+        // 5단계 난이도 시각화 (별점 또는 막대그래프)
+        if (difficultyVisualEl) {
+          difficultyVisualEl.innerHTML = '';
+          const difficultyBar = document.createElement('div');
+          difficultyBar.className = 'difficulty-bar';
+          difficultyBar.style.cssText = 'display: flex; gap: 8px; margin-top: 12px;';
+          
+          for (let i = 1; i <= 5; i++) {
+            const barItem = document.createElement('div');
+            barItem.style.cssText = `
+              flex: 1;
+              height: 32px;
+              border-radius: 8px;
+              background: ${i <= difficulty ? 
+                (i <= 2 ? 'rgba(129, 190, 150, 0.6)' : 
+                 i <= 3 ? 'rgba(255, 215, 128, 0.6)' : 
+                 'rgba(255, 163, 140, 0.6)') : 
+                'rgba(229, 170, 116, 0.2)'};
+              border: 1px solid ${i <= difficulty ? 
+                (i <= 2 ? 'rgba(129, 190, 150, 0.8)' : 
+                 i <= 3 ? 'rgba(255, 215, 128, 0.8)' : 
+                 'rgba(255, 163, 140, 0.8)') : 
+                'rgba(229, 170, 116, 0.3)'};
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: 700;
+              color: ${i <= difficulty ? '#3f2a20' : 'rgba(63, 42, 32, 0.4)'};
+            `;
+            barItem.textContent = i;
+            difficultyBar.appendChild(barItem);
+          }
+          difficultyVisualEl.appendChild(difficultyBar);
+        }
+        
+        // 스트레스 지수 업데이트
+        const stressLevel = demoData.emotion?.stressLevel || 0;
+        if (stressValueEl) {
+          stressValueEl.textContent = `${stressLevel} / 100`;
+        }
+        if (stressBarEl) {
+          stressBarEl.style.width = `${stressLevel}%`;
+        }
+        
+        // 연속 악성 통화 업데이트
+        const escalations = demoData.emotion?.escalations || 0;
+        if (escalationCountEl) {
+          escalationCountEl.textContent = `${escalations}건`;
+        }
+        
+        // 노트 업데이트
+        if (laborNoteEl) {
+          let noteText = '';
+          if (difficulty >= 4) {
+            noteText = '이 통화는 매우 높은 난이도로 분류되었습니다. 상담사 휴식 권고 및 후행적 보상이 필요합니다.';
+          } else if (difficulty >= 3) {
+            noteText = '이 통화는 높은 난이도로 분류되었습니다. 상담사 상태를 모니터링하세요.';
+          } else {
+            noteText = '이 통화는 정상적인 난이도로 처리되었습니다.';
+          }
+          laborNoteEl.querySelector('p').textContent = noteText;
+        }
+        
+        // localStorage 데이터 삭제 (한 번만 사용)
+        localStorage.removeItem('callCenterDemoData');
+      } else {
+        // 데이터가 없으면 기본값 표시
+        console.log('데모 데이터가 없습니다. index.html에서 데모를 시작하고 정지하세요.');
+      }
+    })();
+  </script>
   <script src="app.js"></script>
 </body>
 </html>
