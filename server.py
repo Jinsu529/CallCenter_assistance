@@ -42,8 +42,8 @@ SAMPLE_RATE = 16000
 VAD_FRAME_MS = 30
 VAD_FRAME_SIZE = int(SAMPLE_RATE * VAD_FRAME_MS / 1000)
 VAD_AGGRESSIVENESS = 3
-VAD_SILENCE_TIMEOUT_MS = 800
-VAD_MIN_SPEECH_DURATION_MS = 500
+VAD_SILENCE_TIMEOUT_MS = 300  # 300ms (국제 표준 실시간 STT)
+VAD_MIN_SPEECH_DURATION_MS = 200  # 200ms (국제 표준 실시간 STT)
 VAD_FRAMES_PER_TIMEOUT = VAD_SILENCE_TIMEOUT_MS // VAD_FRAME_MS
 VAD_MIN_SPEECH_FRAMES = VAD_MIN_SPEECH_DURATION_MS // VAD_FRAME_MS
 
@@ -80,10 +80,12 @@ CONNECTED_CLIENTS = set()
 main_asyncio_loop = None
 
 # 스트리밍 STT 관련
-STREAMING_CHUNK_MS = 200  # 스트리밍 전송 간격 (ms)
+STREAMING_CHUNK_MS = 100  # 스트리밍 전송 간격 (ms) - 국제 표준 실시간 STT
 STREAMING_CHUNK_SIZE = int(SAMPLE_RATE * STREAMING_CHUNK_MS / 1000)  # 샘플 수
 active_stt_stream = None  # 현재 활성화된 STT 스트리밍 세션
 streaming_audio_buffer = queue.Queue()  # 스트리밍용 오디오 버퍼
+vad_enabled = False  # VAD 활성화 플래그 (데모 시작/정지에 따라 제어)
+vad_thread = None  # VAD 스레드 참조
 
 # --- 3. 설정 파일 로드 ---
 def load_config():
@@ -202,12 +204,132 @@ def setup_vector_db(genai_module, embedding_model_name):
     print(f"✅ Vector DB 구축 완료! (총 {collection.count()}개 문서 저장)")
     return collection
 
-# --- 4. WebSocket 핸들러 (변경 없음) ---
+# --- 4. WebSocket 핸들러 (수정됨: 클라이언트 메시지 수신 추가) ---
 async def register_client(websocket):
     print(f"[WebSocket] 클라이언트 연결: {websocket.remote_address}")
     CONNECTED_CLIENTS.add(websocket)
     try:
-        await websocket.wait_closed()
+        # 클라이언트로부터 메시지 수신 및 처리
+        async for message in websocket:
+            try:
+                msg = json.loads(message)
+                msg_type = msg.get("type", "")
+                
+                # "start_demo" 메시지 처리: VAD/STT 시작
+                if msg_type == "start_demo":
+                    print(f"[WebSocket] start_demo 메시지 수신: VAD/STT 시작")
+                    global vad_enabled
+                    vad_enabled = True
+                    print(f"[WebSocket] VAD 활성화: STT 스트리밍 준비 완료")
+                
+                # "lag_intent_request" 메시지 처리: 15초 후 LAG로 고객 의도 키워드 생성
+                if msg_type == "lag_intent_request":
+                    print(f"[WebSocket] lag_intent_request 메시지 수신: LAG 고객 의도 키워드 생성 요청")
+                    print(f"[WebSocket] conversation_history 길이: {len(conversation_history)}개 발화")
+                    
+                    # conversation_history를 텍스트로 변환
+                    if conversation_history:
+                        history_text = "\n".join([f"화자{item['speakerId']}: {item['text']}" for item in conversation_history])
+                        print(f"[WebSocket] history_text 생성 완료 (길이: {len(history_text)} 문자)")
+                    else:
+                        history_text = "(대화 기록 없음)"
+                        print(f"[WebSocket] 경고: conversation_history가 비어있습니다.")
+                    
+                    # LAG 고객 의도 키워드 생성 (별도 스레드에서)
+                    def run_lag_intent():
+                        """LAG: 고객 의도 키워드 생성"""
+                        try:
+                            print("[LAG] 고객 의도 키워드 생성 시작...")
+                            intent_keyword = get_lag_intent_keyword(history_text)
+                            print(f"[LAG] 고객 의도 키워드 생성 완료: {intent_keyword[:100]}...")
+                            
+                            # 결과를 WebSocket으로 전송
+                            lag_payload = {
+                                "type": "lag_intent_result",
+                                "customer_intent_keyword": intent_keyword
+                            }
+                            send_message_to_loop(lag_payload)
+                            print(f"[WebSocket] lag_intent_result 전송 완료")
+                        except Exception as e:
+                            print(f"[LAG Error] {e}")
+                            import traceback
+                            traceback.print_exc()
+                            # 에러 발생 시 빈 결과 전송
+                            error_payload = {
+                                "type": "lag_intent_result",
+                                "customer_intent_keyword": ""
+                            }
+                            send_message_to_loop(error_payload)
+                    
+                    # LAG 실행
+                    executor.submit(run_lag_intent)
+                
+                # "stop_demo" 메시지 처리: VAD/STT 중단 및 Task C (AI 자동 요약) 실행
+                if msg_type == "stop_demo":
+                    print(f"[WebSocket] stop_demo 메시지 수신: VAD/STT 중단 및 Task C 실행 요청")
+                    
+                    # VAD/STT 완전 중단
+                    global active_stt_stream
+                    vad_enabled = False
+                    if active_stt_stream and active_stt_stream.is_active:
+                        print(f"[WebSocket] STT 스트리밍 세션 강제 종료")
+                        active_stt_stream.stop_streaming()
+                        active_stt_stream = None
+                    print(f"[WebSocket] VAD 비활성화: STT 스트리밍 중단 완료")
+                    
+                    print(f"[WebSocket] conversation_history 길이: {len(conversation_history)}개 발화")
+                    
+                    # conversation_history를 텍스트로 변환
+                    if conversation_history:
+                        history_text = "\n".join([f"화자{item['speakerId']}: {item['text']}" for item in conversation_history])
+                        print(f"[WebSocket] history_text 생성 완료 (길이: {len(history_text)} 문자)")
+                    else:
+                        history_text = "(대화 기록 없음)"
+                        print(f"[WebSocket] 경고: conversation_history가 비어있습니다.")
+                    
+                    # Task C 실행 (별도 스레드에서)
+                    def run_task_c():
+                        """Task C: AI 자동 요약 실행"""
+                        try:
+                            print("[Task C] AI 자동 요약 시작...")
+                            summary_result = get_call_summary(history_text)
+                            print(f"[Task C] AI 자동 요약 완료")
+                            print(f"[Task C] 요약 결과: inquiry_summary={summary_result.get('inquiry_summary', '')[:50]}...")
+                            
+                            # 결과를 WebSocket으로 전송
+                            task_c_payload = {
+                                "type": "task_c_result",
+                                "data": summary_result
+                            }
+                            send_message_to_loop(task_c_payload)
+                            print(f"[WebSocket] task_c_result 전송 완료")
+                        except Exception as e:
+                            print(f"[Task C Error] {e}")
+                            import traceback
+                            traceback.print_exc()
+                            # 에러 발생 시 빈 결과 전송
+                            error_payload = {
+                                "type": "task_c_result",
+                                "data": {
+                                    "inquiry_summary": "",
+                                    "result_summary": "",
+                                    "call_keywords": [],
+                                    "relevant_manual_ids": [],
+                                    "call_difficulty": 1,
+                                    "customer_emotion_summary": ""
+                                }
+                            }
+                            send_message_to_loop(error_payload)
+                    
+                    # Task C 실행
+                    executor.submit(run_task_c)
+                    
+            except json.JSONDecodeError as e:
+                print(f"[WebSocket] 잘못된 JSON 메시지 수신: {e}")
+            except Exception as e:
+                print(f"[WebSocket] 메시지 처리 오류: {e}")
+                import traceback
+                traceback.print_exc()
     finally:
         print(f"[WebSocket] 클라이언트 연결 종료: {websocket.remote_address}")
         CONNECTED_CLIENTS.remove(websocket)
@@ -348,7 +470,7 @@ class StreamingSTTClient:
         print("[STT Streaming] 스트리밍 세션 종료")
         
     def add_audio_chunk(self, audio_data_int16):
-        """오디오 청크 추가 (200ms 단위)"""
+        """오디오 청크 추가 (100ms 단위)"""
         if not self.is_active:
             return
         
@@ -371,13 +493,19 @@ class StreamingSTTClient:
                 self.last_partial_time = time.time()
     
     def _get_partial_result(self):
-        """누적된 오디오로 partial 결과 생성 (시뮬레이션)"""
+        """누적된 오디오로 partial 결과 생성 (시뮬레이션, Minimum Speech Duration 필터 적용)"""
         if not self.audio_buffer:
             return ""
         
         try:
             # 누적된 오디오를 하나로 합치기
             full_audio_np = np.concatenate(self.audio_buffer)
+            
+            # Minimum Speech Duration 필터: 200ms 미만의 오디오는 무시 (STT007 오류 방지)
+            audio_duration_sec = len(full_audio_np) / SAMPLE_RATE
+            if audio_duration_sec < (VAD_MIN_SPEECH_DURATION_MS / 1000.0):
+                return ""  # partial 결과도 필터링
+            
             audio_bytes_data = full_audio_np.tobytes()
             
             # STT API 호출 (partial 결과 시뮬레이션)
@@ -388,13 +516,20 @@ class StreamingSTTClient:
             return ""
     
     def _get_final_result(self):
-        """최종 결과 생성"""
+        """최종 결과 생성 (Minimum Speech Duration 필터 적용)"""
         if not self.audio_buffer:
             return ""
         
         try:
             # 누적된 오디오를 하나로 합치기
             full_audio_np = np.concatenate(self.audio_buffer)
+            
+            # Minimum Speech Duration 필터: 200ms 미만의 오디오는 무시 (STT007 오류 방지)
+            audio_duration_sec = len(full_audio_np) / SAMPLE_RATE
+            if audio_duration_sec < (VAD_MIN_SPEECH_DURATION_MS / 1000.0):
+                print(f"[STT Filter] 오디오 길이가 너무 짧아 무시됨 ({audio_duration_sec:.2f}초 < {VAD_MIN_SPEECH_DURATION_MS/1000.0}초)")
+                return ""
+            
             audio_bytes_data = full_audio_np.tobytes()
             
             # STT API 호출 (최종 결과)
@@ -417,7 +552,7 @@ class StreamingSTTClient:
         print(f"[STT Streaming] Partial: {text}")
     
     def _handle_final_result(self, text):
-        """Final 결과 처리 (감정 분석 및 RAG 실행)"""
+        """Final 결과 처리 (Task B: RAG 분석만 실행)"""
         global conversation_history
         
         if not text:
@@ -439,58 +574,61 @@ class StreamingSTTClient:
         }
         send_message_to_loop(stt_final_payload)
         
-        # 대화 로그에 추가
+        # 대화 로그에 추가 (누적 저장)
         conversation_history.append({
             "speakerId": speaker_id,
             "text": text
         })
+        print(f"[대화 기록] 총 {len(conversation_history)}개 발화 저장됨 (화자 {speaker_id}: {text[:50]}...)")
         
-        # Task A (감정 분석)와 Task B (RAG)를 병렬로 실행
-        def run_emotion_analysis():
-            """Task A: 감정 분석"""
-            try:
-                print("[Task A] 감정 분석 시작...")
-                emotion_json = get_emotion_from_text(text)
-                print(f"😮 Emotion: {emotion_json}")
-                return emotion_json
-            except Exception as e:
-                print(f"[Task A Error] {e}")
-                return {}
-        
+        # Task B (RAG 분석)만 실행 (Task A 제거됨)
         def run_rag_analysis():
-            """Task B: RAG 분석 (conversation_history 포함)"""
+            """Task B: Query Rewrite + RAG 분석"""
             try:
+                rag_start_time = time.time()
                 print("[Task B] RAG 분석 시작...")
+                # 전체 대화 맥락을 텍스트로 변환 (누적된 전체 conversation_history 사용)
                 history_text = "\n".join([f"화자{item['speakerId']}: {item['text']}" for item in conversation_history])
-                coaching_json = get_agent_coaching_RAG(history_text, {}, text)
-                print(f"👩‍🏫 RAG: {coaching_json}")
-                return coaching_json
+                print(f"[Task B] 전체 대화 맥락 ({len(conversation_history)}개 발화): {history_text[:100]}...")
+                # Query Rewrite + RAG 분석 실행
+                result_json = get_agent_coaching_RAG(history_text, text)
+                rag_latency = int((time.time() - rag_start_time) * 1000)
+                print(f"👩‍🏫 RAG 완료 (지연 시간: {rag_latency}ms)")
+                return result_json
             except Exception as e:
                 print(f"[Task B Error] {e}")
+                import traceback
+                traceback.print_exc()
                 return {}
         
-        # 병렬 실행
-        emotion_future = executor.submit(run_emotion_analysis)
+        # Task B 실행
         rag_future = executor.submit(run_rag_analysis)
         
-        # 결과 대기 및 조합
-        def combine_results():
-            emotion_json = emotion_future.result()
+        # 결과 전송
+        def send_results():
             rag_json = rag_future.result()
+            
+            # STT Final부터 RAG 결과 전송까지의 총 지연 시간 계산
+            total_latency = int((time.time() - start_time) * 1000)
+            
+            # 초경량 WebSocket 메시지 형식 (customer_intent_keyword + relevant_manuals만 포함)
+            customer_intent_keyword = rag_json.get("customer_intent_keyword", "")
+            relevant_manuals = rag_json.get("relevant_manuals", [])
+            
+            print(f"[WebSocket] analysis_result 전송 준비:")
+            print(f"  - customer_intent_keyword: {customer_intent_keyword[:100] if customer_intent_keyword else '(없음)'}...")
+            print(f"  - relevant_manuals: {len(relevant_manuals)}개")
             
             analysis_payload = {
                 "type": "analysis_result",
-                "emotion": emotion_json,
-                "rag": {
-                    "keywords": rag_json.get("keywords", []),
-                    "recommended_script": rag_json.get("recommended_script", ""),
-                    "relevant_manuals": rag_json.get("relevant_manuals", [])
-                }
+                "customer_intent_keyword": customer_intent_keyword,
+                "relevant_manuals": relevant_manuals,
+                "latency": total_latency
             }
             send_message_to_loop(analysis_payload)
-            print("--- [WebSocket] analysis_result 전송 완료 ---")
+            print(f"--- [WebSocket] analysis_result 전송 완료 (총 지연 시간: {total_latency}ms) ---")
         
-        executor.submit(combine_results)
+        executor.submit(send_results)
 
 def get_emotion_from_text(text):
     try:
@@ -590,79 +728,152 @@ def find_relevant_manuals(query_text, top_n=2):
         print(f"[Manual Search Error] {e}")
         return []
 
-def get_agent_coaching_RAG(conversation_history_text, emotion_json, latest_text=""):
-    """RAG 분석 함수 - ai_style_guide_prompt.txt를 사용하여 호출"""
-    global gemini_model, manual_collection, style_guide_prompt
-    try:
-        # 1. 관련 매뉴얼 찾기 (최신 발화 기준)
-        relevant_manuals = find_relevant_manuals(latest_text or conversation_history_text, top_n=2)
-        
-        # 2. 스타일 가이드 프롬프트 로드 확인
-        if not style_guide_prompt:
-            print("[RAG Warning] 스타일 가이드가 로드되지 않았습니다. 기본 프롬프트 사용.")
-            style_guide_prompt = "당신은 쏘카(Socar)의 최우수 전문 상담사입니다."
-        
-        # 3. 매뉴얼 데이터를 JSON 문자열로 변환
-        retrieved_manuals_json = json.dumps(relevant_manuals, ensure_ascii=False, indent=2) if relevant_manuals else "[]"
-        
-        # 4. 스타일 가이드 프롬프트에 변수 치환
-        prompt = style_guide_prompt.replace("{conversation_history}", conversation_history_text)
-        prompt = prompt.replace("{latest_text}", latest_text)
-        prompt = prompt.replace("{retrieved_manuals}", retrieved_manuals_json)
-        
-        # 5. Gemini API 호출
-        safety_settings = {k: 'BLOCK_NONE' for k in ['HARM_CATEGORY_HARASSMENT', 'HARM_CATEGORY_HATE_SPEECH', 'HARM_CATEGORY_SEXUALLY_EXPLICIT', 'HARM_CATEGORY_DANGEROUS_CONTENT']}
-        response = gemini_model.generate_content(prompt, safety_settings=safety_settings)
-        
-        # 6. JSON 응답 파싱
-        json_str = response.text.strip().lstrip("```json").rstrip("```").strip()
-        ai_response = json.loads(json_str)
-        
-        # 7. 결과 반환 (ai_style_guide_prompt.txt 형식에 맞춤)
-        keywords = ai_response.get('keywords', [])
-        recommended_script = ai_response.get('recommended_script', '')
-        relevant_manuals_result = ai_response.get('relevant_manuals', [])
-        
-        # keywords나 recommended_script가 null이면 빈 값으로 처리
-        if keywords is None:
-            keywords = []
-        if recommended_script is None:
-            recommended_script = ''
-        
+def get_agent_coaching_RAG(conversation_history_text, latest_text=""):
+    """초경량 RAG 분석 함수 - Query Rewrite + Vector Search만 수행 (Generator 제거)
+    
+    Args:
+        conversation_history_text: 전체 대화 맥락 (누적된 전체 대화록)
+        latest_text: 최신 발화 (마지막 발화)
+    
+    Returns:
+        {
+            "customer_intent_keyword": "rewritten_query (검색어)",
+            "relevant_manuals": [...]  # 원본 manuals.json 객체 배열
+        }
+    """
+    global gemini_model, manual_collection, conversation_history
+    
+    # 의미있는 말이 없을 때 솔루션 표시하지 않기 (conversation_history 길이 체크)
+    if len(conversation_history) < 2:
+        print(f"[RAG] 대화 기록이 부족하여 RAG 분석을 건너뜁니다 (현재 {len(conversation_history)}개 발화)")
         return {
-            "keywords": keywords,
-            "recommended_script": recommended_script,
-            "relevant_manuals": relevant_manuals_result
+            "customer_intent_keyword": "",
+            "relevant_manuals": []
+        }
+    
+    try:
+        rag_total_start = time.time()
+        
+        # 1단계: Query Rewriter - 검색어 생성기 (경량화 프롬프트)
+        rewrite_start = time.time()
+        rewrite_prompt = f"""대화 문맥과 최신 발화를 바탕으로 매뉴얼 검색용 키워드 하나만 반환하세요.
+
+대화 문맥:
+{conversation_history_text}
+
+최신 발화:
+{latest_text}
+
+예시: 시동 불량 지연"""
+        
+        rewrite_response = gemini_model.generate_content(rewrite_prompt)
+        rewritten_query = rewrite_response.text.strip()
+        rewrite_latency = int((time.time() - rewrite_start) * 1000)
+        print(f"[RAG 1단계] Query Rewrite 완료 (지연 시간: {rewrite_latency}ms): {rewritten_query[:100]}...")
+        
+        # 2단계: Vector Search - rewritten_query로 매뉴얼 검색 (경량화: 1개만)
+        search_start = time.time()
+        relevant_manuals = find_relevant_manuals(rewritten_query, top_n=1)
+        search_latency = int((time.time() - search_start) * 1000)
+        print(f"[RAG 2단계] 매뉴얼 검색 완료 (지연 시간: {search_latency}ms): {len(relevant_manuals)}개 매뉴얼 발견")
+        
+        # 전체 RAG 처리 시간 계산
+        rag_total_latency = int((time.time() - rag_total_start) * 1000)
+        print(f"[RAG] 전체 처리 완료 (총 지연 시간: {rag_total_latency}ms) - Query Rewrite: {rewrite_latency}ms, Vector Search: {search_latency}ms")
+        
+        # 결과 반환 (초경량 형식)
+        return {
+            "customer_intent_keyword": rewritten_query,  # Query Rewrite 결과 (검색어)
+            "relevant_manuals": relevant_manuals  # 원본 manuals.json 객체 배열
         }
     except Exception as e:
         print(f"[RAG API Error] {e}")
         import traceback
         traceback.print_exc()
-        return {"keywords": [], "recommended_script": "", "relevant_manuals": []}
+        return {
+            "customer_intent_keyword": "",
+            "relevant_manuals": []
+        }
 
-def get_call_summary(conversation_history_text):
-    """Task C: AI 상담 자동 요약"""
+def get_lag_intent_keyword(conversation_history_text):
+    """LAG: 15초 후 고객 의도 키워드 생성 (간단한 Gemini API 호출)
+    
+    Args:
+        conversation_history_text: 전체 대화 맥락 (누적된 전체 대화록)
+    
+    Returns:
+        str: 고객 의도 키워드 (예: "자동차 주유카드 문의")
+    """
     global gemini_model
     try:
-        summary_prompt = f"""SYSTEM:
-당신은 콜센터 상담 내용을 분석하는 QA 매니저입니다.
+        lag_start = time.time()
+        
+        # 간단한 프롬프트로 고객 의도 키워드 생성 (경량화)
+        lag_prompt = f"""대화 내용을 분석하여 고객 의도 키워드 2~3개를 공백으로 구분하여 한 줄로 반환하세요.
 
-다음 상담 통화 로그 전체를 읽고, 두 가지 항목으로 요약해 주세요.
-
-1. **"주요 문의"**: 고객이 처음 제기한 핵심 문제가 무엇이었는지 1~2줄로 요약하세요.
-
-2. **"처리 결과"**: 상담사가 어떤 해결책을 제시했으며, 어떻게 통화가 종결되었는지 1~2줄로 요약하세요.
-
-[전체 통화 로그]
-
+대화:
 {conversation_history_text}
 
-[출력 형식 (JSON)]
+예시: 환불 요청 배송 문의"""
+        
+        lag_response = gemini_model.generate_content(lag_prompt)
+        intent_keyword = lag_response.text.strip()
+        lag_latency = int((time.time() - lag_start) * 1000)
+        print(f"[LAG] 고객 의도 키워드 생성 완료 (지연 시간: {lag_latency}ms): {intent_keyword[:100]}...")
+        
+        return intent_keyword
+    except Exception as e:
+        print(f"[LAG API Error] {e}")
+        import traceback
+        traceback.print_exc()
+        return ""
 
+def get_call_summary(conversation_history_text):
+    """Task C: AI 상담 자동 요약 및 감정 분석 (통화 종료 시점에만 실행)
+    
+    통화 전체를 분석하여 요약, 키워드, 관련 매뉴얼 ID, 감정/난이도를 추출합니다.
+    """
+    global gemini_model, manuals_data
+    
+    try:
+        # manuals.json에서 매뉴얼 목록 생성 (Knowledge Base) - 간단한 요약 형태
+        manuals_kb = {}
+        if manuals_data and manuals_data.get('manuals'):
+            for manual in manuals_data['manuals']:
+                category = manual.get('category', 'other')
+                manual_id = manual.get('id', '')
+                if category not in manuals_kb:
+                    manuals_kb[category] = {}
+                manuals_kb[category][manual_id] = {
+                    "title": manual.get('title', '')
+                }
+        
+        manuals_kb_json = json.dumps(manuals_kb, ensure_ascii=False, indent=2)
+        
+        summary_prompt = f"""통화 로그를 분석하여 JSON으로 응답하세요.
+
+1. 주요 문의와 처리 결과를 각각 1-2줄로 요약
+2. 핵심 키워드 5개 추출
+3. 관련 매뉴얼 ID 2~3개 (Knowledge Base에서 찾기)
+4. 고객 감정 변화 요약 및 난이도 1-5 평가
+
+Knowledge Base:
+{manuals_kb_json}
+
+통화 로그:
+{conversation_history_text}
+
+JSON 형식:
 {{
-  "inquiry_summary": "(주요 문의 요약 텍스트)",
-  "result_summary": "(처리 결과 요약 텍스트)"
+  "inquiry_summary": "주요 문의 요약",
+  "result_summary": "처리 결과 요약",
+  "call_keywords": ["키워드1", "키워드2", "키워드3", "키워드4", "키워드5"],
+  "relevant_manual_ids": ["category_id"],
+  "call_difficulty": 1,
+  "customer_emotion_summary": "감정 변화 요약"
 }}
+
+매뉴얼 ID 형식: "category_id" (예: "emergency_1")
 """
         safety_settings = {k: 'BLOCK_NONE' for k in ['HARM_CATEGORY_HARASSMENT', 'HARM_CATEGORY_HATE_SPEECH', 'HARM_CATEGORY_SEXUALLY_EXPLICIT', 'HARM_CATEGORY_DANGEROUS_CONTENT']}
         response = gemini_model.generate_content(summary_prompt, safety_settings=safety_settings)
@@ -670,15 +881,48 @@ def get_call_summary(conversation_history_text):
         json_str = response.text.strip().lstrip("```json").rstrip("```").strip()
         summary_result = json.loads(json_str)
         
+        # 결과 검증 및 기본값 설정
+        inquiry_summary = summary_result.get("inquiry_summary", "")
+        result_summary = summary_result.get("result_summary", "")
+        call_keywords = summary_result.get("call_keywords", [])
+        relevant_manual_ids = summary_result.get("relevant_manual_ids", [])
+        call_difficulty = summary_result.get("call_difficulty", 1)
+        customer_emotion_summary = summary_result.get("customer_emotion_summary", "")
+        
+        # 타입 검증
+        if not isinstance(call_keywords, list):
+            call_keywords = []
+        if not isinstance(relevant_manual_ids, list):
+            relevant_manual_ids = []
+        if not isinstance(call_difficulty, int) or call_difficulty < 1 or call_difficulty > 5:
+            call_difficulty = 1
+        
+        print(f"[Task C] 요약 완료:")
+        print(f"  - inquiry_summary: {inquiry_summary[:50]}...")
+        print(f"  - result_summary: {result_summary[:50]}...")
+        print(f"  - call_keywords: {call_keywords}")
+        print(f"  - relevant_manual_ids: {relevant_manual_ids}")
+        print(f"  - call_difficulty: {call_difficulty}")
+        print(f"  - customer_emotion_summary: {customer_emotion_summary[:50]}...")
+        
         return {
-            "inquiry_summary": summary_result.get("inquiry_summary", ""),
-            "result_summary": summary_result.get("result_summary", "")
+            "inquiry_summary": inquiry_summary,
+            "result_summary": result_summary,
+            "call_keywords": call_keywords,
+            "relevant_manual_ids": relevant_manual_ids,
+            "call_difficulty": call_difficulty,
+            "customer_emotion_summary": customer_emotion_summary
         }
     except Exception as e:
         print(f"[Summary API Error] {e}")
         import traceback
         traceback.print_exc()
-        return {"inquiry_summary": "", "result_summary": ""}
+        return {
+            "inquiry_summary": "",
+            "result_summary": "",
+            "call_keywords": [],
+            "relevant_manual_ids": []
+        }
 
 # --- 6. VAD 및 마이크 처리 (실시간 스트리밍 STT) ---
 def audio_callback(indata, frames, time, status):
@@ -691,10 +935,10 @@ def audio_callback(indata, frames, time, status):
         except Exception as e: print(f"[Callback Error] {e}")
 
 def vad_loop():
-    """VAD 루프: 음성 시작 감지 시 즉시 STT 스트리밍 시작"""
-    global active_stt_stream, naver_stt_client_id, naver_stt_client_secret
+    """VAD 루프: 데모 시작 시에만 활성화, 음성 시작 감지 시 즉시 STT 스트리밍 시작"""
+    global active_stt_stream, naver_stt_client_id, naver_stt_client_secret, vad_enabled
     
-    print("🎤 [VAD 스레드] 마이크 입력을 시작합니다. (실시간 스트리밍 STT 모드)")
+    print("🎤 [VAD 스레드] 대기 중... (데모 시작 대기)")
     
     silence_frames_count = 0
     was_speaking = False  # 이전 프레임에서 말하고 있었는지
@@ -708,6 +952,11 @@ def vad_loop():
             callback=audio_callback
         ):
             while True:
+                # VAD가 활성화되지 않으면 대기
+                if not vad_enabled:
+                    time.sleep(0.1)  # 100ms 대기
+                    continue
+                
                 (is_speech, audio_frame_int16) = audio_queue.get()
                 
                 # 음성 시작 감지: 이전에는 침묵이었는데 지금은 음성
@@ -736,10 +985,10 @@ def vad_loop():
                     if was_speaking:
                         was_speaking = False
                     
-                    # 800ms 침묵 감지: 스트리밍 세션 종료
+                    # 300ms 침묵 감지: 스트리밍 세션 종료 (국제 표준 실시간 STT)
                     if silence_frames_count > VAD_FRAMES_PER_TIMEOUT:
                         if active_stt_stream and active_stt_stream.is_active:
-                            print(f"[VAD] 0.8초 침묵 감지 → STT 스트리밍 세션 종료")
+                            print(f"[VAD] 300ms 침묵 감지 → STT 스트리밍 세션 종료")
                             active_stt_stream.stop_streaming()
                             active_stt_stream = None
                         silence_frames_count = 0
@@ -864,9 +1113,10 @@ if __name__ == "__main__":
         rag_collection = setup_vector_db(genai, EMBEDDING_MODEL_NAME)
         manual_collection = setup_manual_vector_db(genai, EMBEDDING_MODEL_NAME, manuals_data)
         
-        # 7. VAD 루프를 별도 스레드에서 시작
+        # 7. VAD 루프를 별도 스레드에서 시작 (데모 시작 전까지 대기 상태)
         vad_thread = threading.Thread(target=vad_loop, daemon=True)
         vad_thread.start()
+        print("✅ VAD 스레드 시작 (데모 시작 대기 중)")
         
         # 8. 메인 스레드에서 WebSocket 서버 시작
         asyncio.run(main_async())

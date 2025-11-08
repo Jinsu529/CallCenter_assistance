@@ -30,7 +30,7 @@
         </div>
         <div class="header-metric">
           <span class="metric-label">최근 업데이트</span>
-          <span class="metric-value">2024.01.15</span>
+          <span class="metric-value">2025.11.09</span>
         </div>
       </div>
     </header>
@@ -89,6 +89,46 @@
             <button class="btn btn-outline" id="open-in-call-btn">상담 화면에서 열기</button>
           </div>
         </article>
+
+        <!-- 원격지원 UI (2.1. 스마트키 오류 매뉴얼일 때만 표시) -->
+        <article class="card remote-support-card" id="remote-support-card" style="display: none;">
+          <div class="card-header">
+            <h2>원격지원</h2>
+            <span class="badge badge-info" id="remote-status-badge">대기 중</span>
+          </div>
+          <div class="remote-support-content">
+            <div class="remote-vehicle-info">
+              <div class="info-item">
+                <span class="info-label">차량 번호:</span>
+                <span class="info-value" id="remote-vehicle-number">서울 12가 3456</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">차량 위치:</span>
+                <span class="info-value" id="remote-vehicle-location">서울시 강남구 테헤란로 123</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">연결 상태:</span>
+                <span class="info-value" id="remote-connection-status">연결 안 됨</span>
+              </div>
+            </div>
+            
+            <div class="remote-control-buttons">
+              <button class="btn btn-primary" id="remote-connect-btn">원격지원 연결</button>
+              <button class="btn btn-success" id="remote-unlock-btn" disabled>문 열기</button>
+              <button class="btn btn-warning" id="remote-lock-btn" disabled>문 잠그기</button>
+              <button class="btn btn-info" id="remote-status-btn" disabled>차량 상태 확인</button>
+            </div>
+
+            <div class="remote-result-area" id="remote-result-area" style="display: none;">
+              <div class="result-header">
+                <h3>제어 결과</h3>
+              </div>
+              <div class="result-content" id="remote-result-content">
+                <!-- 제어 결과가 여기에 표시됩니다 -->
+              </div>
+            </div>
+          </div>
+        </article>
       </section>
     </main>
 
@@ -140,7 +180,7 @@
                 <li>경찰/119 신고 여부 확인</li>
                 <li>상대방 차량 정보 (차량번호, 보험사, 연락처)</li>
                 <li>사고 발생 시간 및 장소</li>
-                <li>보험 접수 안내 (쏘카 보험팀 연락)</li>
+                <li>보험 접수 안내 (보험팀 연락)</li>
                 <li>현장 사진 촬영 (전면, 후면, 측면, 손상 부위)</li>
               </ul>
             </div>
@@ -148,7 +188,7 @@
               <h3>Step 4: 현장 사진/블랙박스 확보</h3>
               <p><strong>앱을 통한 접수 방법:</strong></p>
               <ul>
-                <li>쏘카 앱 → "사고 신고" 메뉴</li>
+                <li>앱 → "사고 신고" 메뉴</li>
                 <li>사진 업로드 (최소 5장 이상)</li>
                 <li>블랙박스 영상 다운로드 안내</li>
                 <li>사고 접수 번호 확인 및 전달</li>
@@ -157,7 +197,7 @@
           `,
           script: `
             <div class="script-item">
-              <p><strong>상담원:</strong> "안녕하세요, 쏘카 상담센터입니다. 사고가 발생하셨다고 하셨는데, 다치신 곳은 없으신가요?"</p>
+              <p><strong>상담원:</strong> "안녕하세요, 상담센터입니다. 사고가 발생하셨다고 하셨는데, 다치신 곳은 없으신가요?"</p>
             </div>
             <div class="script-item">
               <p><strong>고객:</strong> "네, 괜찮습니다. 하지만 차가 많이 찌그러졌어요."</p>
@@ -169,7 +209,7 @@
               <p><strong>고객:</strong> "아직 안 했어요."</p>
             </div>
             <div class="script-item">
-              <p><strong>상담원:</strong> "알겠습니다. 경찰 신고를 먼저 진행해 주시고, 상대방 차량 정보(차량번호, 보험사, 연락처)를 확인해 주세요. 그리고 현장 사진을 최소 5장 이상 촬영해 주시고, 쏘카 앱의 '사고 신고' 메뉴를 통해 업로드해 주세요."</p>
+              <p><strong>상담원:</strong> "알겠습니다. 경찰 신고를 먼저 진행해 주시고, 상대방 차량 정보(차량번호, 보험사, 연락처)를 확인해 주세요. 그리고 현장 사진을 최소 5장 이상 촬영해 주시고, 앱의 '사고 신고' 메뉴를 통해 업로드해 주세요."</p>
             </div>
           `,
           related: [
@@ -192,7 +232,7 @@
                 <ul>
                   <li>배터리 방전 가능성 확인</li>
                   <li>긴급 출동 서비스 접수</li>
-                  <li>가까운 쏘카존/협력사 안내</li>
+                  <li>가까운 주차존/협력사 안내</li>
                 </ul>
               </div>
               <div class="symptom-item">
@@ -215,7 +255,7 @@
             <div class="manual-step">
               <h3>긴급 출동 서비스 접수</h3>
               <ul>
-                <li>쏘카 앱 → "긴급 출동" 메뉴</li>
+                <li>앱 → "긴급 출동" 메뉴</li>
                 <li>현재 위치 및 증상 입력</li>
                 <li>출동 시간 안내 (평균 30분 이내)</li>
                 <li>대차량 지원 여부 확인</li>
@@ -230,7 +270,7 @@
               <p><strong>고객:</strong> "시동이 안 걸려요."</p>
             </div>
             <div class="script-item">
-              <p><strong>상담원:</strong> "배터리 방전 가능성이 있습니다. 쏘카 앱의 '긴급 출동' 메뉴를 통해 출동 서비스를 접수해 주세요. 평균 30분 이내에 출동할 예정입니다."</p>
+              <p><strong>상담원:</strong> "배터리 방전 가능성이 있습니다. 앱의 '긴급 출동' 메뉴를 통해 출동 서비스를 접수해 주세요. 평균 30분 이내에 출동할 예정입니다."</p>
             </div>
           `,
           related: [
@@ -304,7 +344,7 @@
               <div class="symptom-item">
                 <h4>"반납이 안 돼요"</h4>
                 <ul>
-                  <li>차량이 지정된 쏘카존에 있는지 확인</li>
+                  <li>차량이 지정된 주차존에 있는지 확인</li>
                   <li>앱 재시작</li>
                   <li>원격 제어 지원</li>
                 </ul>
@@ -369,7 +409,7 @@
               <p><strong>고객:</strong> "이전 사용자가 담배를 피운 것 같아요."</p>
             </div>
             <div class="script-item">
-              <p><strong>상담원:</strong> "사진을 촬영하셔서 쏘카 앱의 '차량 상태 신고' 메뉴를 통해 업로드해 주세요. 이전 사용자에게 패널티가 부과되며, 필요하시면 청소 서비스를 안내해 드리겠습니다."</p>
+              <p><strong>상담원:</strong> "사진을 촬영하셔서 앱의 '차량 상태 신고' 메뉴를 통해 업로드해 주세요. 이전 사용자에게 패널티가 부과되며, 필요하시면 청소 서비스를 안내해 드리겠습니다."</p>
             </div>
           `,
           related: [
@@ -577,19 +617,19 @@
             </div>
           `,
           related: [
-            { title: "4.2. 쏘카존 관련 매뉴얼", link: "manual-detail.html?category=other&id=2" }
+            { title: "4.2. 주차존 관련 매뉴얼", link: "manual-detail.html?category=other&id=2" }
           ]
         },
         2: {
-          title: "4.2. 쏘카존 관련 매뉴얼",
-          subtitle: "쏘카존 위치 안내, 주차 공간 부족, 지정 구역 외 반납 대응",
+          title: "4.2. 주차존 관련 매뉴얼",
+          subtitle: "주차존 위치 안내, 주차 공간 부족, 지정 구역 외 반납 대응",
           category: "가입/기타",
           priority: "보통",
           badge: "일반",
-          keywords: ["쏘카존", "주차", "위치", "반납", "구역"],
+          keywords: ["주차존", "주차", "위치", "반납", "구역"],
           content: `
             <div class="manual-step">
-              <h3>"쏘카존을 못 찾겠어요"</h3>
+              <h3>"주차존을 못 찾겠어요"</h3>
               <ul>
                 <li>앱 내 지도 확인</li>
                 <li>주소 및 랜드마크 안내</li>
@@ -599,7 +639,7 @@
             <div class="manual-step">
               <h3>"주차 공간이 없어요"</h3>
               <ul>
-                <li>인근 쏘카존 안내</li>
+                <li>인근 주차존 안내</li>
                 <li>대기 시간 안내</li>
                 <li>예약 변경 안내</li>
               </ul>
@@ -615,7 +655,7 @@
           `,
           script: `
             <div class="script-item">
-              <p><strong>상담원:</strong> "쏘카존을 찾기 어려우시군요. 앱 내 지도를 확인해 주시고, 주소와 랜드마크를 안내해 드리겠습니다."</p>
+              <p><strong>상담원:</strong> "주차존을 찾기 어려우시군요. 앱 내 지도를 확인해 주시고, 주소와 랜드마크를 안내해 드리겠습니다."</p>
             </div>
           `,
           related: [
@@ -665,6 +705,131 @@
 
     // 페이지 로드 시 매뉴얼 로드
     loadManual();
+
+    // 원격지원 UI 표시 (2.1. 스마트키 오류 매뉴얼일 때만)
+    if (category === 'usage' && id === '1') {
+      document.getElementById('remote-support-card').style.display = 'block';
+    }
+
+    // 원격지원 상태 관리
+    let remoteConnected = false;
+    let vehicleStatus = {
+      doorLocked: true,
+      engineOn: false,
+      batteryLevel: 85
+    };
+
+    // 원격지원 연결 버튼
+    document.getElementById('remote-connect-btn').addEventListener('click', () => {
+      if (!remoteConnected) {
+        // 연결 시뮬레이션
+        document.getElementById('remote-connect-btn').textContent = '연결 중...';
+        document.getElementById('remote-connect-btn').disabled = true;
+        
+        setTimeout(() => {
+          remoteConnected = true;
+          document.getElementById('remote-connect-btn').textContent = '연결 해제';
+          document.getElementById('remote-connect-btn').disabled = false;
+          document.getElementById('remote-connection-status').textContent = '연결됨';
+          document.getElementById('remote-connection-status').style.color = '#28a745';
+          document.getElementById('remote-status-badge').textContent = '연결됨';
+          document.getElementById('remote-status-badge').className = 'badge badge-success';
+          
+          // 제어 버튼 활성화
+          document.getElementById('remote-unlock-btn').disabled = false;
+          document.getElementById('remote-lock-btn').disabled = false;
+          document.getElementById('remote-status-btn').disabled = false;
+          
+          showResult('원격지원이 연결되었습니다. 차량 제어가 가능합니다.');
+        }, 1500);
+      } else {
+        // 연결 해제
+        remoteConnected = false;
+        document.getElementById('remote-connect-btn').textContent = '원격지원 연결';
+        document.getElementById('remote-connection-status').textContent = '연결 안 됨';
+        document.getElementById('remote-connection-status').style.color = '#dc3545';
+        document.getElementById('remote-status-badge').textContent = '대기 중';
+        document.getElementById('remote-status-badge').className = 'badge badge-info';
+        
+        // 제어 버튼 비활성화
+        document.getElementById('remote-unlock-btn').disabled = true;
+        document.getElementById('remote-lock-btn').disabled = true;
+        document.getElementById('remote-status-btn').disabled = true;
+        
+        document.getElementById('remote-result-area').style.display = 'none';
+      }
+    });
+
+    // 문 열기 버튼
+    document.getElementById('remote-unlock-btn').addEventListener('click', () => {
+      if (!remoteConnected) return;
+      
+      document.getElementById('remote-unlock-btn').disabled = true;
+      document.getElementById('remote-unlock-btn').textContent = '처리 중...';
+      
+      setTimeout(() => {
+        vehicleStatus.doorLocked = false;
+        document.getElementById('remote-unlock-btn').disabled = false;
+        document.getElementById('remote-unlock-btn').textContent = '문 열기';
+        showResult('✅ 문이 성공적으로 열렸습니다. 고객님께 확인해 주세요.');
+      }, 2000);
+    });
+
+    // 문 잠그기 버튼
+    document.getElementById('remote-lock-btn').addEventListener('click', () => {
+      if (!remoteConnected) return;
+      
+      document.getElementById('remote-lock-btn').disabled = true;
+      document.getElementById('remote-lock-btn').textContent = '처리 중...';
+      
+      setTimeout(() => {
+        vehicleStatus.doorLocked = true;
+        document.getElementById('remote-lock-btn').disabled = false;
+        document.getElementById('remote-lock-btn').textContent = '문 잠그기';
+        showResult('🔒 문이 성공적으로 잠겼습니다. 고객님께 확인해 주세요.');
+      }, 2000);
+    });
+
+    // 차량 상태 확인 버튼
+    document.getElementById('remote-status-btn').addEventListener('click', () => {
+      if (!remoteConnected) return;
+      
+      document.getElementById('remote-status-btn').disabled = true;
+      document.getElementById('remote-status-btn').textContent = '확인 중...';
+      
+      setTimeout(() => {
+        const statusText = `
+          <div class="status-item">
+            <strong>문 상태:</strong> ${vehicleStatus.doorLocked ? '🔒 잠김' : '🔓 열림'}
+          </div>
+          <div class="status-item">
+            <strong>시동 상태:</strong> ${vehicleStatus.engineOn ? '🟢 켜짐' : '⚫ 꺼짐'}
+          </div>
+          <div class="status-item">
+            <strong>배터리 잔량:</strong> ${vehicleStatus.batteryLevel}%
+          </div>
+          <div class="status-item">
+            <strong>차량 위치:</strong> 서울시 강남구 테헤란로 123
+          </div>
+        `;
+        document.getElementById('remote-status-btn').disabled = false;
+        document.getElementById('remote-status-btn').textContent = '차량 상태 확인';
+        showResult(statusText);
+      }, 1500);
+    });
+
+    // 결과 표시 함수
+    function showResult(message) {
+      const resultArea = document.getElementById('remote-result-area');
+      const resultContent = document.getElementById('remote-result-content');
+      resultContent.innerHTML = message;
+      resultArea.style.display = 'block';
+      
+      // 5초 후 자동 숨김
+      setTimeout(() => {
+        resultArea.style.display = 'none';
+      }, 5000);
+    }
 
     // 스크립트 복사 버튼
     document.getElementById('copy-script-btn').addEventListener('click', () => {

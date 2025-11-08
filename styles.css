@@ -213,6 +213,42 @@ body {
   background: rgba(255, 194, 149, 0.25);
 }
 
+.btn-success {
+  background: linear-gradient(135deg, #28a745, #34ce57);
+  color: #fff;
+  border: none;
+  box-shadow: 0 12px 24px rgba(40, 167, 69, 0.35);
+}
+
+.btn-success:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 32px rgba(40, 167, 69, 0.45);
+}
+
+.btn-warning {
+  background: linear-gradient(135deg, #ffc107, #ffd54f);
+  color: #3f2a20;
+  border: none;
+  box-shadow: 0 12px 24px rgba(255, 193, 7, 0.35);
+}
+
+.btn-warning:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 32px rgba(255, 193, 7, 0.45);
+}
+
+.btn-info {
+  background: linear-gradient(135deg, #17a2b8, #3fc1d8);
+  color: #fff;
+  border: none;
+  box-shadow: 0 12px 24px rgba(23, 162, 184, 0.35);
+}
+
+.btn-info:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 32px rgba(23, 162, 184, 0.45);
+}
+
 .control-hints {
   list-style: none;
   display: flex;
@@ -1228,6 +1264,122 @@ body {
 
 .action-buttons .btn {
   width: 100%;
+}
+
+/* 원격지원 UI 스타일 */
+.remote-support-card {
+  margin-top: 24px;
+}
+
+.remote-support-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.remote-vehicle-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(255, 241, 224, 0.6);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 186, 120, 0.3);
+}
+
+.remote-vehicle-info .info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.remote-vehicle-info .info-label {
+  font-weight: 600;
+  color: #8a4d26;
+  font-size: 0.9rem;
+}
+
+.remote-vehicle-info .info-value {
+  color: #3f2a20;
+  font-size: 0.95rem;
+}
+
+.remote-control-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.remote-control-buttons .btn {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 0.95rem;
+}
+
+.remote-result-area {
+  padding: 16px;
+  background: rgba(255, 241, 224, 0.8);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 186, 120, 0.4);
+  margin-top: 12px;
+}
+
+.result-header {
+  margin-bottom: 12px;
+}
+
+.result-header h3 {
+  font-size: 1.1rem;
+  color: #8a4d26;
+  margin-bottom: 8px;
+}
+
+.result-content {
+  color: #3f2a20;
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+.status-item {
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 186, 120, 0.2);
+}
+
+.status-item:last-child {
+  border-bottom: none;
+}
+
+.status-item strong {
+  color: #8a4d26;
+  margin-right: 8px;
+}
+
+/* debriefing.html 신규 섹션 */
+.manual-link-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.manual-link {
+  display: block;
+  padding: 10px 14px;
+  background: rgba(255, 234, 211, 0.85);
+  border-radius: 12px;
+  border: 1px solid rgba(233, 162, 107, 0.35);
+  text-decoration: none;
+  color: #c75d2c;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.25s ease;
+}
+
+.manual-link:hover {
+  background: rgba(255, 222, 186, 0.9);
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(214, 142, 82, 0.2);
 }
 
 @media (max-width: 1140px) {

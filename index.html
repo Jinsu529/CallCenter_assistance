@@ -29,7 +29,7 @@
       <div class="header-metrics">
         <div class="header-metric">
           <span class="metric-label">콜 ID</span>
-          <span class="metric-value" id="call-id">A-1024</span>
+          <span class="metric-value" id="call-id">Hack-2025</span>
         </div>
         <div class="header-metric">
           <span class="metric-label">경과 시간</span>
@@ -55,25 +55,16 @@
             <button id="stop-demo" class="btn btn-outline" disabled>■ 정지</button>
           </div>
           <ul class="control-hints">
-            <li>STT Latency, 감정 지표, 위험도 추이가 자동으로 변합니다.</li>
-            <li>추천 스크립트는 고객 감정에 맞춰 갱신됩니다.</li>
-            <li>상담원 보호 로직이 트리거되면 알림이 표시됩니다.</li>
           </ul>
         </article>
 
         <article class="card transcript-card">
           <div class="card-header">
-            <h2>실시간 STT 및 고객 의도 분석</h2>
+            <h2>실시간 STT</h2>
             <span id="stt-latency" class="badge badge-neutral">Latency -- ms</span>
           </div>
           <div id="transcript-list" class="transcript-list">
             <p class="placeholder">대화가 시작되면 여기에 텍스트가 표시됩니다.</p>
-          </div>
-          <div class="intent-section">
-            <h3>고객 의도</h3>
-            <div id="intent-list" class="intent-list">
-              <span class="placeholder">의도 분석 중...</span>
-            </div>
           </div>
         </article>
       </section>
@@ -81,32 +72,61 @@
       <section class="column right-column">
         <article class="card solution-card">
           <div class="card-header">
-            <h2>AI 솔루션 자동 추천</h2>
+            <h2>솔루션 추천</h2>
             <span class="badge badge-info">AI Copilot</span>
           </div>
           <div class="solution-content">
-            <!-- 1. 고객 의도 키워드 (최상단) -->
-            <div class="keyword-section" style="margin-bottom: 20px;">
-              <h3 style="font-size: 0.9rem; opacity: 0.75; margin-bottom: 10px;">고객 의도 키워드</h3>
-              <div id="keyword-list" class="keyword-list">
-                <span class="placeholder">아직 키워드가 없습니다.</span>
+            <!-- 1. 고객 의도 (키워드) - 최상단 -->
+            <div class="intent-section" style="margin-bottom: 20px;">
+              <h3 style="font-size: 0.9rem; opacity: 0.75; margin-bottom: 10px;">고객 의도</h3>
+              <div id="customer-intent" class="keyword-list">
+                <span class="placeholder">고객 의도 분석 중...</span>
               </div>
             </div>
             
-            <!-- 2. 추천 스크립트 (중간) -->
-            <div class="script-section" style="margin-bottom: 20px;">
-              <h3 style="font-size: 0.9rem; opacity: 0.75; margin-bottom: 10px;">추천 스크립트</h3>
-              <div id="script-content">
-                <div class="placeholder">추천 스크립트가 표시됩니다.</div>
-              </div>
-            </div>
-            
-            <!-- 3. 대응 매뉴얼 (하단) -->
+            <!-- 2. 대응 매뉴얼 (하단) - 아코디언 형태 -->
             <div class="manual-section">
               <h3 style="font-size: 0.9rem; opacity: 0.75; margin-bottom: 10px;">대응 매뉴얼</h3>
               <ul id="manual-list" class="solution-list">
                 <li class="placeholder">고객 의도에 맞는 대응 매뉴얼이 표시됩니다.</li>
               </ul>
+            </div>
+            
+            <!-- 원격지원 UI (2.1. 스마트키 오류 매뉴얼일 때만 표시) -->
+            <div class="remote-support-section" id="remote-support-section" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255, 186, 120, 0.3);">
+              <h3 style="font-size: 0.9rem; opacity: 0.75; margin-bottom: 10px;">원격지원</h3>
+              <div class="remote-support-content">
+                <div class="remote-vehicle-info">
+                  <div class="info-item">
+                    <span class="info-label">차량 번호:</span>
+                    <span class="info-value" id="remote-vehicle-number-index">서울 12가 3456</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">차량 위치:</span>
+                    <span class="info-value" id="remote-vehicle-location-index">서울시 강남구 테헤란로 123</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">연결 상태:</span>
+                    <span class="info-value" id="remote-connection-status-index">연결 안 됨</span>
+                  </div>
+                </div>
+                
+                <div class="remote-control-buttons">
+                  <button class="btn btn-primary" id="remote-connect-btn-index">원격지원 연결</button>
+                  <button class="btn btn-success" id="remote-unlock-btn-index" disabled>문 열기</button>
+                  <button class="btn btn-warning" id="remote-lock-btn-index" disabled>문 잠그기</button>
+                  <button class="btn btn-info" id="remote-status-btn-index" disabled>차량 상태 확인</button>
+                </div>
+
+                <div class="remote-result-area" id="remote-result-area-index" style="display: none;">
+                  <div class="result-header">
+                    <h3>제어 결과</h3>
+                  </div>
+                  <div class="result-content" id="remote-result-content-index">
+                    <!-- 제어 결과가 여기에 표시됩니다 -->
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </article>
